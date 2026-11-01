@@ -1,0 +1,182 @@
+{#-
+SPDX-License-Identifier: Apache-2.0
+SPDX-FileCopyrightText: 2025 - 2026 BMO Soluciones, S.A.
+-#}
+
+{% extends 'base.html' %}
+{% from 'macros.html' import render_field, render_form_errors %}
+
+{% block content %}
+<div class="container">
+    {{ render_form_errors(form) }}
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>{{ titulo }}</h2>
+        <a href="{{ url_for('vacation.dashboard') }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left me-1"></i>{{ _('Volver') }}
+        </a>
+    </div>
+
+    <div class="card">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0">
+                <i class="bi bi-calendar-check me-2"></i>{{ _('Registro Directo de Vacaciones Tomadas') }}
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="alert alert-info">
+                <h6><i class="bi bi-info-circle me-2"></i>{{ _('Importante: Distinción entre Días Calendario y Días de Vacaciones') }}</h6>
+                <p class="mb-0">
+                    <strong>{{ _('Este formulario permite especificar:') }}</strong>
+                </p>
+                <ul class="mb-0">
+                    <li><strong>{{ _('Período de descanso:') }}</strong> {{ _('Fechas calendario del descanso (ej: viernes a lunes = 4 días calendario)') }}</li>
+                    <li><strong>{{ _('Días a descontar:') }}</strong> {{ _('Días reales de vacaciones según política de empresa (ej: solo 2 días de vacaciones)') }}</li>
+                </ul>
+                <p class="mt-2 mb-0">
+                    <em>{{ _('Ejemplo: Un empleado toma viernes y lunes (4 días calendario), pero según política de la empresa solo se descuentan 2 días de su saldo de vacaciones.') }}</em>
+                </p>
+            </div>
+            
+            <form method="POST" action="">
+                {{ form.hidden_tag() }}
+                
+                <div class="row">
+                    <div class="col-md-12">
+                        {{ render_field(form.empleado_id) }}
+                    </div>
+                </div>
+                
+                <hr>
+                <h6>{{ _('Período de Descanso (Calendario)') }}</h6>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        {{ render_field(form.fecha_inicio) }}
+                    </div>
+                    <div class="col-md-6">
+                        {{ render_field(form.fecha_fin) }}
+                    </div>
+                </div>
+                
+                <hr>
+                <h6>{{ _('Días de Vacaciones a Descontar') }}</h6>
+                
+                <div class="row">
+                    <div class="col-md-12">
+                        {{ render_field(form.dias_descontados) }}
+                        <div class="alert alert-warning mt-2">
+                            <small>
+                                <i class="bi bi-exclamation-triangle me-1"></i>
+                                {{ _('Este valor se descontará del saldo de vacaciones del empleado y puede ser diferente de los días calendario del período de descanso.') }}
+                            </small>
+                        </div>
+                    </div>
+                </div>
+                
+                <hr>
+                <h6>{{ _('Asociación con Nómina (REQUERIDO)') }}</h6>
+                
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle me-2"></i>
+                    <strong>{{ _('La novedad debe asociarse a una Percepción o Deducción') }}</strong>
+                    <p class="mb-0 mt-2">
+                        {{ _('Esto asegura que al calcular la nómina del empleado, las vacaciones se procesen correctamente.') }}
+                    </p>
+                    <ul class="mb-0 mt-2">
+                        <li><strong>{{ _('Deducción:') }}</strong> {{ _('Si las vacaciones se descuentan del salario (ausencias)') }}</li>
+                        <li><strong>{{ _('Percepción:') }}</strong> {{ _('Si las vacaciones se pagan como ingreso adicional') }}</li>
+                    </ul>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-4">
+                        {{ render_field(form.tipo_concepto) }}
+                    </div>
+                    <div class="col-md-4" id="percepcion-field">
+                        {{ render_field(form.percepcion_id) }}
+                    </div>
+                    <div class="col-md-4" id="deduccion-field">
+                        {{ render_field(form.deduccion_id) }}
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-12">
+                        {{ render_field(form.observaciones) }}
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <div class="alert alert-success">
+                    <h6><i class="bi bi-check-circle me-2"></i>{{ _('¿Qué sucede al registrar?') }}</h6>
+                    <ol class="mb-0">
+                        <li>{{ _('Se crea un registro de vacaciones (VacationNovelty)') }}</li>
+                        <li>{{ _('Se descuenta el saldo de la cuenta de vacaciones del empleado') }}</li>
+                        <li>{{ _('Se crea una entrada en el libro mayor de vacaciones (auditoría)') }}</li>
+                        <li>{{ _('Se crea una novedad de nómina asociada para los cálculos de pago') }}</li>
+                        <li>{{ _('El registro queda marcado como "approved" y "taken" automáticamente') }}</li>
+                    </ol>
+                </div>
+                
+                <div class="mt-4">
+                    {{ form.submit(class="btn btn-primary btn-lg") }}
+                    <a href="{{ url_for('vacation.dashboard') }}" class="btn btn-secondary">{{ _('Cancelar') }}</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-calculate suggestion based on date range (optional helper)
+    const fechaInicio = document.getElementById('fecha_inicio');
+    const fechaFin = document.getElementById('fecha_fin');
+    const diasDescontados = document.getElementById('dias_descontados');
+    
+    function calculateDays() {
+        if (fechaInicio.value && fechaFin.value) {
+            const inicio = new Date(fechaInicio.value);
+            const fin = new Date(fechaFin.value);
+            const diffTime = Math.abs(fin - inicio);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+            
+            // Only suggest if field is empty
+            if (!diasDescontados.value || diasDescontados.value === '0') {
+                // This is just a suggestion - user should adjust based on policy
+                diasDescontados.value = diffDays;
+            }
+        }
+    }
+    
+    if (fechaInicio && fechaFin && diasDescontados) {
+        fechaInicio.addEventListener('change', calculateDays);
+        fechaFin.addEventListener('change', calculateDays);
+    }
+    
+    // Show/hide percepcion/deduccion fields based on tipo_concepto
+    const tipoConcepto = document.getElementById('tipo_concepto');
+    const percepcionField = document.getElementById('percepcion-field');
+    const deduccionField = document.getElementById('deduccion-field');
+    
+    function toggleConceptoFields() {
+        if (tipoConcepto.value === 'percepcion') {
+            percepcionField.style.display = 'block';
+            deduccionField.style.display = 'none';
+            document.getElementById('deduccion_id').value = '';
+        } else if (tipoConcepto.value === 'deduccion') {
+            percepcionField.style.display = 'none';
+            deduccionField.style.display = 'block';
+            document.getElementById('percepcion_id').value = '';
+        }
+    }
+    
+    if (tipoConcepto && percepcionField && deduccionField) {
+        tipoConcepto.addEventListener('change', toggleConceptoFields);
+        toggleConceptoFields(); // Initial state
+    }
+});
+</script>
+{% endblock %}

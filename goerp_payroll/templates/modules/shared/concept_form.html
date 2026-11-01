@@ -1,0 +1,260 @@
+{#-
+SPDX-License-Identifier: Apache-2.0
+SPDX-FileCopyrightText: 2025 - 2026 BMO Soluciones, S.A.
+-#}
+
+{% extends "base.html" %}
+{% from "macros.html" import render_field %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item">
+                        <a
+                            href="{{ url_for(config.blueprint + '.' + config.route_prefix + 'index') }}">{{ config.plural }}</a>
+                    </li>
+                    <li class="breadcrumb-item active" aria-current="page">{{ title }}</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <h4 class="mb-0">
+                        <i class="bi {{ config.icon }} me-2"></i>
+                        {{ title }}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" novalidate>
+                        {{ form.hidden_tag() }}
+
+                        <!-- Basic Information -->
+                        <h5 class="border-bottom pb-2 mb-3">
+                            <i class="bi bi-info-circle me-2"></i>{{ _('Información Básica') }}
+                        </h5>
+
+                        <div class="row">
+                            <div class="col-md-4">
+                                {{ render_field(form.codigo) }}
+                            </div>
+                            <div class="col-md-8">
+                                {{ render_field(form.nombre) }}
+                            </div>
+                        </div>
+
+                        {% if form.techo_anual is defined %}
+                        <div class="row">
+                            <div class="col-md-4">{{ render_field(form.techo_anual) }}</div>
+                            <div class="col-md-4">{{ render_field(form.tope_base_gravable) }}</div>
+                            <div class="col-md-4">{{ render_field(form.monto_exento) }}</div>
+                        </div>
+                        {% endif %}
+
+                        {% if form.empresa_ids is defined %}
+                        <div class="row">
+                            <div class="col-md-8">
+                                {{ render_field(form.empresa_ids) }}
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <div class="row">
+                            <div class="col-12">
+                                {{ render_field(form.descripcion) }}
+                            </div>
+                        </div>
+
+                        <!-- Type-specific fields -->
+                        {% if form.tipo is defined %}
+                        <div class="row">
+                            <div class="col-md-4">
+                                {{ render_field(form.tipo) }}
+                            </div>
+                            {% if form.es_impuesto is defined %}
+                            <div class="col-md-4 d-flex align-items-end">
+                                <div class="mb-3">
+                                    {{ render_field(form.es_impuesto) }}
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+
+                        <!-- Calculation Configuration -->
+                        <h5 class="border-bottom pb-2 mb-3 mt-4">
+                            <i class="bi bi-calculator me-2"></i>{{ _('Configuración de Cálculo') }}
+                        </h5>
+
+                        <div class="row">
+                            <div class="col-md-4">
+                                {{ render_field(form.formula_tipo) }}
+                            </div>
+                            <div class="col-md-4">
+                                {{ render_field(form.monto_default) }}
+                            </div>
+                            <div class="col-md-4">
+                                {{ render_field(form.porcentaje) }}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                {{ render_field(form.base_calculo) }}
+                            </div>
+                            {% if form.unidad_calculo is defined %}
+                            <div class="col-md-6">
+                                {{ render_field(form.unidad_calculo) }}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        {% if form.tope_aplicacion is defined %}
+                        <div class="row">
+                            <div class="col-md-6">
+                                {{ render_field(form.tope_aplicacion) }}
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Options -->
+                        <h5 class="border-bottom pb-2 mb-3 mt-4">
+                            <i class="bi bi-toggles me-2"></i>{{ _('Opciones') }}
+                        </h5>
+
+                        <div class="row">
+                            {% if form.gravable is defined %}
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    {{ render_field(form.gravable) }}
+                                </div>
+                            </div>
+                            {% endif %}
+                            {% if form.antes_impuesto is defined %}
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    {{ render_field(form.antes_impuesto) }}
+                                </div>
+                            </div>
+                            {% endif %}
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    {{ render_field(form.recurrente) }}
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    {{ render_field(form.activo) }}
+                                </div>
+                            </div>
+                        </div>
+
+                        {% if form.mostrar_como_ingreso_reportes is defined %}
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ render_field(form.mostrar_como_ingreso_reportes) }}
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        {% if form.editable_en_nomina is defined %}
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ render_field(form.editable_en_nomina) }}
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        {% if form.es_inasistencia is defined or form.descontar_pago_inasistencia is defined %}
+                        <div class="row">
+                            {% if form.es_inasistencia is defined %}
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ render_field(form.es_inasistencia) }}
+                                </div>
+                            </div>
+                            {% endif %}
+                            {% if form.descontar_pago_inasistencia is defined %}
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ render_field(form.descontar_pago_inasistencia) }}
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+
+                        <!-- Vigencia -->
+                        <h5 class="border-bottom pb-2 mb-3 mt-4">
+                            <i class="bi bi-calendar-range me-2"></i>{{ _('Vigencia') }}
+                        </h5>
+
+                        <div class="row">
+                            {% if form.vigente_desde is defined %}
+                            <div class="col-md-6">
+                                {{ render_field(form.vigente_desde) }}
+                            </div>
+                            {% endif %}
+                            {% if form.valido_hasta is defined %}
+                            <div class="col-md-6">
+                                {{ render_field(form.valido_hasta) }}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Accounting -->
+                        <h5 class="border-bottom pb-2 mb-3 mt-4">
+                            <i class="bi bi-journal-text me-2"></i>{{ _('Configuración Contable') }}
+                        </h5>
+
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    {{ render_field(form.contabilizable) }}
+                                </div>
+                            </div>
+                            {% if form.invertir_asiento_contable is defined %}
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    {{ render_field(form.invertir_asiento_contable) }}
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                {{ render_field(form.codigo_cuenta_debe) }}
+                            </div>
+                            <div class="col-md-6">
+                                {{ render_field(form.codigo_cuenta_haber) }}
+                            </div>
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="d-flex justify-content-between mt-4 pt-3 border-top">
+                            <a href="{{ url_for(config.blueprint + '.' + config.route_prefix + 'index') }}"
+                                class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left me-1"></i> {{ _('Cancelar') }}
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-lg me-1"></i> {{ _('Guardar') }}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

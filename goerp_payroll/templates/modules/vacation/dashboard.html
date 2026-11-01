@@ -1,0 +1,159 @@
+{#-
+SPDX-License-Identifier: Apache-2.0
+SPDX-FileCopyrightText: 2025 - 2026 BMO Soluciones, S.A.
+-#}
+
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    
+    <div class="mb-4">
+        <h2><i class="bi bi-calendar2-check me-2"></i>{{ _('Gestión de Vacaciones') }}</h2>
+        <p class="text-muted">{{ _('Gestión y control de vacaciones') }}</p>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">{{ _('Políticas Activas') }}</h5>
+                    <p class="display-4">{{ total_policies }}</p>
+                    <a href="{{ url_for('vacation.policy_index') }}" class="btn btn-sm btn-primary">
+                        {{ _('Ver Políticas') }}
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">{{ _('Cuentas Activas') }}</h5>
+                    <p class="display-4">{{ total_accounts }}</p>
+                    <a href="{{ url_for('vacation.account_index') }}" class="btn btn-sm btn-primary">
+                        {{ _('Ver Cuentas') }}
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">{{ _('Solicitudes Pendientes') }}</h5>
+                    <p class="display-4">{{ pending_requests }}</p>
+                    <a href="{{ url_for('vacation.leave_request_index', estado='pending') }}" class="btn btn-sm btn-primary">
+                        {{ _('Ver Solicitudes') }}
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h4>{{ _('Acciones Rápidas') }}</h4>
+            <div class="btn-group" role="group">
+                <a href="{{ url_for('vacation.policy_new') }}" class="btn btn-outline-primary">
+                    <i class="bi bi-plus-circle me-1"></i>{{ _('Nueva Política') }}
+                </a>
+                <a href="{{ url_for('vacation.account_new') }}" class="btn btn-outline-primary">
+                    <i class="bi bi-plus-circle me-1"></i>{{ _('Nueva Cuenta') }}
+                </a>
+                <a href="{{ url_for('vacation.leave_request_new') }}" class="btn btn-outline-primary">
+                    <i class="bi bi-plus-circle me-1"></i>{{ _('Nueva Solicitud') }}
+                </a>
+                <a href="{{ url_for('vacation.register_vacation_taken') }}" class="btn btn-success">
+                    <i class="bi bi-calendar-check me-1"></i>{{ _('Registrar Vacaciones Descansadas') }}
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Initial Balance Loading (Implementation Phase) -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-info">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-cloud-upload me-2"></i>{{ _('Carga de Saldos Iniciales') }}
+                        <small class="float-end badge bg-light text-dark">{{ _('Implementación') }}</small>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-3">
+                        {{ _('Durante la implementación del sistema, cargue los saldos iniciales de vacaciones de sus empleados:') }}
+                    </p>
+                    <div class="btn-group" role="group">
+                        <a href="{{ url_for('vacation.initial_balance_form') }}" class="btn btn-outline-info">
+                            <i class="bi bi-person-plus me-1"></i>{{ _('Carga Individual') }}
+                        </a>
+                        <a href="{{ url_for('vacation.initial_balance_bulk') }}" class="btn btn-outline-info">
+                            <i class="bi bi-file-earmark-excel me-1"></i>{{ _('Carga Masiva (Excel)') }}
+                        </a>
+                    </div>
+                    <small class="text-muted d-block mt-2">
+                        <i class="bi bi-info-circle"></i> 
+                        {{ _('Solo para cuentas sin movimientos previos. Use la carga masiva para empresas con muchos empleados.') }}
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">{{ _('Actividad Reciente') }}</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>{{ _('Empleado') }}</th>
+                            <th>{{ _('Tipo') }}</th>
+                            <th>{{ _('Fechas') }}</th>
+                            <th>{{ _('Unidades') }}</th>
+                            <th>{{ _('Estado') }}</th>
+                            <th>{{ _('Acciones') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for request in recent_requests %}
+                        <tr>
+                            <td>{{ request.empleado.primer_nombre }} {{ request.empleado.primer_apellido }}</td>
+                            <td>{{ _('Solicitud de Vacaciones') }}</td>
+                            <td>{{ request.start_date.strftime('%Y-%m-%d') }} - {{ request.end_date.strftime('%Y-%m-%d') }}</td>
+                            <td>{{ request.units }}</td>
+                            <td>
+                                {% if request.estado == 'pending' %}
+                                    <span class="badge bg-warning">{{ _('Pendiente') }}</span>
+                                {% elif request.estado == 'approved' %}
+                                    <span class="badge bg-success">{{ _('Aprobado') }}</span>
+                                {% elif request.estado == 'rejected' %}
+                                    <span class="badge bg-danger">{{ _('Rechazado') }}</span>
+                                {% elif request.estado == 'taken' %}
+                                    <span class="badge bg-info">{{ _('Disfrutado') }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{{ url_for('vacation.leave_request_detail', request_id=request.id) }}" 
+                                   class="btn btn-sm btn-outline-primary" title="{{ _('Ver Detalles') }}">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted">{{ _('No hay actividad reciente.') }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

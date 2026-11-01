@@ -1,0 +1,186 @@
+{#-
+SPDX-License-Identifier: Apache-2.0
+SPDX-FileCopyrightText: 2025 - 2026 BMO Soluciones, S.A.
+-#}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Tabla de Pagos - Préstamo/Adelanto</title>
+    <style>
+        @page {
+            size: letter;
+            margin: 2cm;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 11pt;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 18pt;
+        }
+        .info-section {
+            margin-bottom: 20px;
+        }
+        .info-row {
+            margin-bottom: 5px;
+        }
+        .info-label {
+            font-weight: bold;
+            display: inline-block;
+            width: 150px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #366092;
+            color: white;
+            font-weight: bold;
+        }
+        .text-right {
+            text-align: right;
+        }
+        .text-center {
+            text-align: center;
+        }
+        .footer {
+            margin-top: 50px;
+            border-top: 1px solid #000;
+            padding-top: 10px;
+        }
+        .signature-section {
+            margin-top: 80px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .signature-line {
+            width: 45%;
+            border-top: 1px solid #000;
+            text-align: center;
+            padding-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>TABLA DE PAGOS</h1>
+        <p>Préstamo / Adelanto de Salario</p>
+    </div>
+
+    <div class="info-section">
+        <div class="info-row">
+            <span class="info-label">Empleado:</span>
+            <span>{{ prestamo.empleado.primer_nombre }} {{ prestamo.empleado.primer_apellido }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Código Empleado:</span>
+            <span>{{ prestamo.empleado.codigo_empleado }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Tipo:</span>
+            <span>{% if prestamo.tipo == 'advance' %}Adelanto de Salario{% else %}Préstamo{% endif %}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Monto Aprobado:</span>
+            <span>
+                {% if prestamo.moneda %}{{ prestamo.moneda.simbolo or prestamo.moneda.codigo }}{% endif %}
+                {{ "{:,.2f}".format(prestamo.monto_aprobado or prestamo.monto_solicitado) }}
+            </span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Número de Cuotas:</span>
+            <span>{{ prestamo.cuotas_pactadas }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Monto por Cuota:</span>
+            <span>
+                {% if prestamo.moneda %}{{ prestamo.moneda.simbolo or prestamo.moneda.codigo }}{% endif %}
+                {{ "{:,.2f}".format(prestamo.monto_por_cuota or 0) }}
+            </span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">Fecha de Solicitud:</span>
+            <span>{{ prestamo.fecha_solicitud.strftime('%d/%m/%Y') }}</span>
+        </div>
+        {% if prestamo.fecha_aprobacion %}
+        <div class="info-row">
+            <span class="info-label">Fecha de Aprobación:</span>
+            <span>{{ prestamo.fecha_aprobacion.strftime('%d/%m/%Y') }}</span>
+        </div>
+        {% endif %}
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th class="text-center">#</th>
+                <th>Fecha Estimada</th>
+                <th class="text-right">Cuota</th>
+                <th class="text-right">Interés</th>
+                <th class="text-right">Capital</th>
+                <th class="text-right">Saldo</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in tabla_pago %}
+            <tr>
+                <td class="text-center">{{ item.numero }}</td>
+                <td>
+                    {% if item.fecha_estimada %}
+                        {{ item.fecha_estimada.strftime('%d/%m/%Y') }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+                <td class="text-right">
+                    {% if prestamo.moneda %}{{ prestamo.moneda.simbolo or prestamo.moneda.codigo }}{% endif %}
+                    {{ "{:,.2f}".format(item.cuota) }}
+                </td>
+                <td class="text-right">
+                    {% if prestamo.moneda %}{{ prestamo.moneda.simbolo or prestamo.moneda.codigo }}{% endif %}
+                    {{ "{:,.2f}".format(item.interes) }}
+                </td>
+                <td class="text-right">
+                    {% if prestamo.moneda %}{{ prestamo.moneda.simbolo or prestamo.moneda.codigo }}{% endif %}
+                    {{ "{:,.2f}".format(item.capital) }}
+                </td>
+                <td class="text-right">
+                    {% if prestamo.moneda %}{{ prestamo.moneda.simbolo or prestamo.moneda.codigo }}{% endif %}
+                    {{ "{:,.2f}".format(item.saldo) }}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="signature-section">
+        <div class="signature-line">
+            <p>Firma del Empleado</p>
+        </div>
+        <div class="signature-line">
+            <p>Firma Autorizada</p>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p style="font-size: 9pt; text-align: center;">
+            Este documento constituye el compromiso de pago del préstamo/adelanto arriba detallado.
+            El empleado se compromete a pagar las cuotas según lo establecido.
+        </p>
+    </div>
+</body>
+</html>

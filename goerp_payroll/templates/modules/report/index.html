@@ -1,0 +1,100 @@
+{#-
+SPDX-License-Identifier: Apache-2.0
+SPDX-FileCopyrightText: 2025 - 2026 BMO Soluciones, S.A.
+-#}
+
+{% extends "base.html" %}
+{% from "macros.html" import render_pagination %}
+
+{% block title %}{{ _('Reportes') }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h2"><i class="bi bi-file-earmark-bar-graph me-2"></i>{{ _('Reportes') }}</h1>
+        {% if current_user.tipo == 'admin' %}
+        <a href="{{ url_for('report.admin_index') }}" class="btn btn-secondary">
+            <i class="bi bi-gear me-1"></i>{{ _('Administración') }}
+        </a>
+        {% endif %}
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-4">
+                    <label for="category" class="form-label">{{ _('Categoría') }}</label>
+                    <select name="category" id="category" class="form-select">
+                        <option value="">{{ _('Todas') }}</option>
+                        {% for cat in categories %}
+                        <option value="{{ cat }}" {% if cat == current_category %}selected{% endif %}>
+                            {{ cat|capitalize }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="type" class="form-label">{{ _('Tipo') }}</label>
+                    <select name="type" id="type" class="form-select">
+                        <option value="">{{ _('Todos') }}</option>
+                        <option value="system" {% if current_type == 'system' %}selected{% endif %}>{{ _('Sistema') }}</option>
+                        <option value="custom" {% if current_type == 'custom' %}selected{% endif %}>{{ _('Personalizado') }}</option>
+                    </select>
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-funnel me-1"></i>{{ _('Filtrar') }}
+                    </button>
+                    <a href="{{ url_for('report.index') }}" class="btn btn-outline-secondary ms-2">
+                        <i class="bi bi-x-circle me-1"></i>{{ _('Limpiar') }}
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Reports List -->
+    <div class="row">
+        {% for report in reports %}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h5 class="card-title mb-0">{{ report.name }}</h5>
+                        <span class="badge bg-{{ 'primary' if report.type == 'system' else 'info' }}">
+                            {{ _('Sistema') if report.type == 'system' else _('Personalizado') }}
+                        </span>
+                    </div>
+                    {% if report.category %}
+                    <p class="text-muted small mb-2">
+                        <i class="bi bi-folder me-1"></i>{{ report.category|capitalize }}
+                    </p>
+                    {% endif %}
+                    <p class="card-text">{{ report.description or _('Sin descripción') }}</p>
+                </div>
+                <div class="card-footer bg-transparent">
+                    <div class="d-flex gap-2">
+                        <a href="{{ url_for('report.execute_form', report_id=report.id) }}" class="btn btn-sm btn-primary">
+                            <i class="bi bi-play-fill me-1"></i>{{ _('Ejecutar') }}
+                        </a>
+                        <a href="{{ url_for('report.detail', report_id=report.id) }}" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-info-circle me-1"></i>{{ _('Detalles') }}
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-12">
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle me-2"></i>{{ _('No hay reportes disponibles.') }}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Pagination -->
+    {{ render_pagination(pagination, 'report.index') }}
+</div>
+{% endblock %}

@@ -1,0 +1,271 @@
+{#-
+SPDX-License-Identifier: Apache-2.0
+SPDX-FileCopyrightText: 2025 - 2026 BMO Soluciones, S.A.
+-#}
+
+{% extends "base.html" %}
+
+{% block title %}{{ _('Ejecutar Reporte') }} - {{ report.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h2">
+            <i class="bi bi-play-circle me-2"></i>{{ _('Ejecutar Reporte') }}: {{ report.name }}
+        </h1>
+        <a href="{{ url_for('report.index') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i>{{ _('Volver') }}
+        </a>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Report Info -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">{{ report.name }}</h5>
+                    <p class="card-text">{{ report.description or _('Sin descripción') }}</p>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <small class="text-muted">
+                                <strong>{{ _('Tipo') }}:</strong>
+                                <span class="badge bg-{{ 'primary' if report.type == 'system' else 'info' }} ms-1">
+                                    {{ _('Sistema') if report.type == 'system' else _('Personalizado') }}
+                                </span>
+                            </small>
+                        </div>
+                        <div class="col-md-6">
+                            <small class="text-muted">
+                                <strong>{{ _('Categoría') }}:</strong> {{ report.category|capitalize if report.category else '-' }}
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Parameters Form -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">{{ _('Parámetros del Reporte') }}</h5>
+                </div>
+                <div class="card-body">
+                    <form id="reportForm">
+                        {% if metadata and metadata.parameters %}
+                            {% for param in metadata.parameters %}
+                            <div class="mb-3">
+                                <label for="param_{{ param.name }}" class="form-label">
+                                    {{ param.name|replace('_', ' ')|title }}
+                                    {% if param.required %}<span class="text-danger">*</span>{% endif %}
+                                </label>
+                                {% if param.type == 'date' %}
+                                <input type="date" class="form-control" id="param_{{ param.name }}" name="{{ param.name }}" {% if param.required %}required{% endif %}>
+                                {% elif param.type == 'boolean' %}
+                                <select class="form-select" id="param_{{ param.name }}" name="{{ param.name }}">
+                                    <option value="">{{ _('Seleccionar...') }}</option>
+                                    <option value="true">{{ _('Sí') }}</option>
+                                    <option value="false">{{ _('No') }}</option>
+                                </select>
+                                {% else %}
+                                <input type="text" class="form-control" id="param_{{ param.name }}" name="{{ param.name }}" {% if param.required %}required{% endif %}>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <p class="text-muted">{{ _('Este reporte no requiere parámetros.') }}</p>
+                        {% endif %}
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <button type="submit" class="btn btn-primary" id="executeBtn">
+                                <i class="bi bi-play-fill me-1"></i>{{ _('Ejecutar Reporte') }}
+                            </button>
+                            <button type="button" class="btn btn-success" id="exportBtn" style="display:none;">
+                                <i class="bi bi-file-earmark-spreadsheet me-1"></i>{{ _('Exportar a Excel') }}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Results -->
+            <div id="resultsContainer" style="display:none;">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">{{ _('Resultados') }}</h5>
+                        <span id="resultCount" class="badge bg-primary"></span>
+                    </div>
+                    <div class="card-body">
+                        <div id="executionInfo" class="alert alert-info mb-3" style="display:none;">
+                            <small>
+                                <i class="bi bi-clock me-1"></i>
+                                {{ _('Tiempo de ejecución') }}: <span id="executionTime"></span> ms
+                            </small>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover" id="resultsTable">
+                                <thead id="resultsTableHead"></thead>
+                                <tbody id="resultsTableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Loading Spinner -->
+            <div id="loadingSpinner" class="text-center my-5" style="display:none;">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">{{ _('Cargando...') }}</span>
+                </div>
+                <p class="mt-2">{{ _('Ejecutando reporte...') }}</p>
+            </div>
+
+            <!-- Error Alert -->
+            <div id="errorAlert" class="alert alert-danger" style="display:none;">
+                <i class="bi bi-exclamation-triangle me-2"></i>
+                <span id="errorMessage"></span>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <!-- Help Card -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-question-circle me-2"></i>{{ _('Ayuda') }}</h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text small">
+                        {{ _('Complete los parámetros requeridos y haga clic en "Ejecutar Reporte" para ver los resultados.') }}
+                    </p>
+                    <p class="card-text small">
+                        {{ _('Una vez generado el reporte, podrá exportar los resultados a Excel.') }}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('reportForm');
+    const executeBtn = document.getElementById('executeBtn');
+    const exportBtn = document.getElementById('exportBtn');
+    const loadingSpinner = document.getElementById('loadingSpinner');
+    const resultsContainer = document.getElementById('resultsContainer');
+    const errorAlert = document.getElementById('errorAlert');
+    let currentParameters = {};
+
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        executeReport();
+    });
+
+    exportBtn.addEventListener('click', function() {
+        exportReport();
+    });
+
+    function executeReport() {
+        // Collect parameters
+        const formData = new FormData(form);
+        const parameters = {};
+        for (let [key, value] of formData.entries()) {
+            if (value) {
+                parameters[key] = value;
+            }
+        }
+        currentParameters = parameters;
+
+        // Show loading
+        loadingSpinner.style.display = 'block';
+        resultsContainer.style.display = 'none';
+        errorAlert.style.display = 'none';
+        exportBtn.style.display = 'none';
+
+        // Execute report
+        fetch('{{ url_for("report.run_report", report_id=report.id) }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(parameters)
+        })
+        .then(response => response.json())
+        .then(data => {
+            loadingSpinner.style.display = 'none';
+            
+            if (data.success) {
+                displayResults(data.results, data.total_count, data.execution_time_ms);
+                exportBtn.style.display = 'inline-block';
+            } else {
+                showError(data.error || '{{ _("Error al ejecutar el reporte") }}');
+            }
+        })
+        .catch(error => {
+            loadingSpinner.style.display = 'none';
+            showError('{{ _("Error de conexión") }}: ' + error.message);
+        });
+    }
+
+    function displayResults(results, totalCount, executionTime) {
+        if (!results || results.length === 0) {
+            showError('{{ _("El reporte no generó resultados.") }}');
+            return;
+        }
+
+        // Update result count
+        document.getElementById('resultCount').textContent = totalCount + ' {{ _("registros") }}';
+        document.getElementById('executionTime').textContent = executionTime;
+        document.getElementById('executionInfo').style.display = 'block';
+
+        // Build table header
+        const headers = Object.keys(results[0]);
+        const thead = document.getElementById('resultsTableHead');
+        thead.innerHTML = '<tr>' + headers.map(h => '<th>' + h + '</th>').join('') + '</tr>';
+
+        // Build table body
+        const tbody = document.getElementById('resultsTableBody');
+        tbody.innerHTML = results.map(row => {
+            return '<tr>' + headers.map(h => '<td>' + (row[h] !== null && row[h] !== undefined ? row[h] : '-') + '</td>').join('') + '</tr>';
+        }).join('');
+
+        // Show results
+        resultsContainer.style.display = 'block';
+    }
+
+    function showError(message) {
+        document.getElementById('errorMessage').textContent = message;
+        errorAlert.style.display = 'block';
+    }
+
+    function exportReport() {
+        // Export to Excel
+        fetch('{{ url_for("report.export_report", report_id=report.id, export_format="excel") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(currentParameters)
+        })
+        .then(response => {
+            if (response.ok) {
+                return response.blob();
+            }
+            throw new Error('Export failed');
+        })
+        .then(blob => {
+            // Download file
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = '{{ report.name }}.xlsx';
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        })
+        .catch(error => {
+            showError('{{ _("Error al exportar") }}: ' + error.message);
+        });
+    }
+});
+</script>
+{% endblock %}

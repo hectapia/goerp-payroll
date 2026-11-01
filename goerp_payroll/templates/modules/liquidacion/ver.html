@@ -1,0 +1,104 @@
+{#-
+SPDX-License-Identifier: Apache-2.0
+SPDX-FileCopyrightText: 2025 - 2026 BMO Soluciones, S.A.
+-#}
+
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-file-earmark-text me-2"></i>{{ _('Liquidación') }}</h2>
+        <div class="d-flex gap-2">
+            <a class="btn btn-outline-primary" href="{{ url_for('liquidacion.exportar_excel', liquidacion_id=liquidacion.id) }}">
+                {{ _('Exportar Excel') }}
+            </a>
+            {% if liquidacion.estado in ['draft', 'calculated'] %}
+                <form method="POST" action="{{ url_for('liquidacion.recalcular', liquidacion_id=liquidacion.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-outline-primary">{{ _('Recalcular') }}</button>
+                </form>
+                <form method="POST" action="{{ url_for('liquidacion.aplicar', liquidacion_id=liquidacion.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-success">{{ _('Aplicar') }}</button>
+                </form>
+            {% elif liquidacion.estado == 'applied' %}
+                <form method="POST" action="{{ url_for('liquidacion.pagar', liquidacion_id=liquidacion.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <label class="visually-hidden" for="medio_pago">{{ _('Medio de Pago') }}</label>
+                    <input class="form-control" id="medio_pago" name="medio_pago" placeholder="{{ _('Medio de pago') }}" value="{{ liquidacion.medio_pago or '' }}">
+                    <label class="visually-hidden" for="referencia_pago">{{ _('Referencia de Pago') }}</label>
+                    <input class="form-control" id="referencia_pago" name="referencia_pago" placeholder="{{ _('Referencia') }}" value="{{ liquidacion.referencia_pago or '' }}">
+                    <button type="submit" class="btn btn-success">{{ _('Marcar Pagada') }}</button>
+                </form>
+            {% endif %}
+            <a href="{{ url_for('liquidacion.index') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i>{{ _('Volver') }}
+            </a>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <div><strong>{{ _('Empleado') }}:</strong>
+                        {% if liquidacion.empleado %}
+                            {{ liquidacion.empleado.primer_nombre }} {{ liquidacion.empleado.primer_apellido }}
+                        {% else %}
+                            {{ liquidacion.empleado_id }}
+                        {% endif %}
+                    </div>
+                    <div><strong>{{ _('Fecha Cálculo') }}:</strong> {{ local_date(liquidacion.fecha_calculo) }}</div>
+                    <div><strong>{{ _('Último Día Pagado') }}:</strong> {{ liquidacion.ultimo_dia_pagado }}</div>
+                </div>
+                <div class="col-md-6">
+                    <div><strong>{{ _('Días por Pagar') }}:</strong> {{ liquidacion.dias_por_pagar }}</div>
+                    <div><strong>{{ _('Total Bruto') }}:</strong> {{ liquidacion.total_bruto }}</div>
+                    <div><strong>{{ _('Total Deducciones') }}:</strong> {{ liquidacion.total_deducciones }}</div>
+                    <div><strong>{{ _('Total Neto') }}:</strong> {{ liquidacion.total_neto }}</div>
+                    <div><strong>{{ _('Estado') }}:</strong> {{ liquidacion.estado }}</div>
+                    <div><strong>{{ _('Causa') }}:</strong> {{ liquidacion.causa_terminacion or '-' }}</div>
+                    <div><strong>{{ _('Medio de Pago') }}:</strong> {{ liquidacion.medio_pago or '-' }}</div>
+                    <div><strong>{{ _('Referencia de Pago') }}:</strong> {{ liquidacion.referencia_pago or '-' }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">{{ _('Detalle') }}</h5>
+        </div>
+        <div class="card-body">
+            {% if liquidacion.detalles %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>{{ _('Tipo') }}</th>
+                                <th>{{ _('Código') }}</th>
+                                <th>{{ _('Descripción') }}</th>
+                                <th class="text-end">{{ _('Monto') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for d in liquidacion.detalles|sort(attribute='orden') %}
+                                <tr>
+                                    <td>{{ d.tipo }}</td>
+                                    <td>{{ d.codigo }}</td>
+                                    <td>{{ d.descripcion }}</td>
+                                    <td class="text-end">{{ money(d.monto) }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="text-muted mb-0">{{ _('No hay detalles.') }}</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

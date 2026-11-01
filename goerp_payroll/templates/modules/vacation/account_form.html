@@ -1,0 +1,56 @@
+{#-
+SPDX-License-Identifier: Apache-2.0
+SPDX-FileCopyrightText: 2025 - 2026 BMO Soluciones, S.A.
+-#}
+
+{% extends 'base.html' %}
+{% from 'macros.html' import render_field, render_form_errors %}
+
+{% block content %}
+<div class="container">
+    {{ render_form_errors(form) }}
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>{{ titulo }}</h2>
+        <a href="{{ url_for('vacation.account_index') }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left me-1"></i>{{ _('Volver') }}
+        </a>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <form method="POST" action="">
+                {{ form.hidden_tag() }}
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        {{ render_field(form.empleado_id) }}
+                    </div>
+                    <div class="col-md-6">
+                        {{ render_field(form.policy_id) }}
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        {{ render_field(form.current_balance) }}
+                    </div>
+                    <div class="col-md-6">
+                        {{ render_field(form.activo) }}
+                    </div>
+                </div>
+                
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle me-2"></i>
+                    {{ _('El balance inicial será registrado como una entrada en el libro mayor de vacaciones.') }}
+                </div>
+                
+                <div class="mt-4">
+                    {{ form.submit(class="btn btn-primary") }}
+                    <a href="{{ url_for('vacation.account_index') }}" class="btn btn-secondary">{{ _('Cancelar') }}</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

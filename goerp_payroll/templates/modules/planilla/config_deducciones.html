@@ -1,0 +1,126 @@
+{#-
+SPDX-License-Identifier: Apache-2.0
+SPDX-FileCopyrightText: 2025 - 2026 BMO Soluciones, S.A.
+-#}
+
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            <i class="bi bi-dash-circle me-2"></i>
+            {{ _('Deducciones') }} - {{ planilla.nombre }}
+        </h2>
+        <a href="{{ url_for('planilla.config', planilla_id=planilla.id) }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i>{{ _('Volver a Configuración') }}
+        </a>
+    </div>
+
+    <div class="row">
+        <!-- Add Deduction Form -->
+        <div class="col-lg-4 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-coaty-light">
+                    <h5 class="mb-0"><i class="bi bi-plus-circle me-2"></i>{{ _('Agregar Deducción') }}</h5>
+                </div>
+                <div class="card-body">
+                    <form action="{{ url_for('planilla.add_deduccion', planilla_id=planilla.id) }}" method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <div class="mb-3">
+                            <label class="form-label">{{ _('Deducción') }}</label>
+                            <select name="deduccion_id" class="form-select" required>
+                                <option value="">{{ _('-- Seleccionar Deducción --') }}</option>
+                                {% for ded in deducciones_disponibles %}
+                                    {% set is_assigned = ded.id in (deducciones_asignadas | map(attribute='deduccion_id') | list) %}
+                                    {% if not is_assigned %}
+                                    <option value="{{ ded.id }}">{{ ded.codigo }} - {{ ded.nombre }}</option>
+                                    {% endif %}
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">{{ _('Prioridad') }}</label>
+                            <input type="number" name="prioridad" class="form-control" value="100" min="1" max="999">
+                            <div class="form-text">{{ _('Menor número = se aplica primero (1-100 impuestos, 101-200 embargos, 201-300 préstamos)') }}</div>
+                        </div>
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" name="es_obligatoria" class="form-check-input" id="esObligatoria">
+                            <label class="form-check-label" for="esObligatoria">{{ _('Es obligatoria') }}</label>
+                        </div>
+                        <button type="submit" class="btn btn-coaty w-100">
+                            <i class="bi bi-plus me-1"></i>{{ _('Agregar Deducción') }}
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Deductions List -->
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-coaty-light d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="bi bi-list-ul me-2"></i>{{ _('Deducciones Asignadas') }}
+                        <span class="badge bg-danger ms-2">{{ deducciones_asignadas | length }}</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if deducciones_asignadas %}
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>{{ _('Prioridad') }}</th>
+                                    <th>{{ _('Código') }}</th>
+                                    <th>{{ _('Nombre') }}</th>
+                                    <th>{{ _('Tipo') }}</th>
+                                    <th class="text-center">{{ _('Obligatoria') }}</th>
+                                    <th class="text-end">{{ _('Acciones') }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for assoc in deducciones_asignadas %}
+                                <tr>
+                                    <td>
+                                        <form action="{{ url_for('planilla.update_deduccion_priority', planilla_id=planilla.id, association_id=assoc.id) }}" method="POST" class="d-inline">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <input type="number" name="prioridad" value="{{ assoc.prioridad }}" class="form-control form-control-sm" style="width: 70px;" min="1" max="999" onchange="this.form.submit()">
+                                        </form>
+                                    </td>
+                                    <td><code>{{ assoc.deduccion.codigo }}</code></td>
+                                    <td>{{ assoc.deduccion.nombre }}</td>
+                                    <td><small class="text-muted">{{ assoc.deduccion.tipo }}</small></td>
+                                    <td class="text-center">
+                                        {% if assoc.es_obligatoria %}
+                                        <span class="badge bg-danger">{{ _('Sí') }}</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">{{ _('No') }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end">
+                                        <form action="{{ url_for('planilla.remove_deduccion', planilla_id=planilla.id, association_id=assoc.id) }}" method="POST" class="d-inline">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="{{ _('Remover') }}" onclick="return confirm('{{ _('¿Remover esta deducción de la planilla?') }}')">
+                                                <i class="bi bi-x-lg"></i>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-dash-circle display-4 text-muted"></i>
+                        <p class="lead mt-3">{{ _('No hay deducciones asignadas a esta planilla') }}</p>
+                        <p class="text-muted">{{ _('Seleccione deducciones del formulario para agregarlas.') }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

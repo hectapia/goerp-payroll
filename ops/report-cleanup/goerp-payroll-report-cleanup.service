@@ -1,0 +1,8 @@
+[Unit]
+Description=GoERP Payroll report export cleanup
+
+[Service]
+Type=oneshot
+User=goerp-payroll
+WorkingDirectory=/opt/goerp-payroll
+ExecStart=/usr/local/bin/payrollctl maintenance cleanup-temp

@@ -1,0 +1,10 @@
+[Unit]
+Description=GoERP Payroll exchange-rate synchronization
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=goerp-payroll
+WorkingDirectory=/opt/goerp-payroll
+EnvironmentFile=-/etc/goerp-payroll/exchange-rates.env
+ExecStart=/usr/local/bin/payrollctl maintenance sync-exchange-rates

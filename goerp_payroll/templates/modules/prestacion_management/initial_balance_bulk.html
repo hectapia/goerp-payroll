@@ -1,0 +1,199 @@
+{#-
+SPDX-License-Identifier: Apache-2.0
+SPDX-FileCopyrightText: 2025 - 2026 BMO Soluciones, S.A.
+-#}
+
+{% extends "base.html" %}
+
+{% block title %}{{ _('Carga Masiva de Saldos Iniciales de Prestaciones') }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    
+    <div class="row">
+        <div class="col-md-10 offset-md-1">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-file-earmark-excel"></i> {{ _('Carga Masiva de Saldos Iniciales desde Excel') }}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        <strong>{{ _('Uso:') }}</strong> 
+                        {{ _('Use esta función para cargar los saldos iniciales de prestaciones de múltiples empleados desde un archivo Excel durante la implementación del sistema.') }}
+                    </div>
+                    
+                    <div class="card mb-4">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0">{{ _('Formato del Archivo Excel') }}</h5>
+                        </div>
+                        <div class="card-body">
+                            <p>{{ _('El archivo Excel debe tener las siguientes columnas (sin encabezados):') }}</p>
+                            <table class="table table-bordered table-sm">
+                                <thead class="thead-light">
+                                    <tr>
+                                        <th>{{ _('Columna') }}</th>
+                                        <th>{{ _('Campo') }}</th>
+                                        <th>{{ _('Tipo') }}</th>
+                                        <th>{{ _('Requerido') }}</th>
+                                        <th>{{ _('Ejemplo') }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><strong>A</strong></td>
+                                        <td>{{ _('Código de Empleado') }}</td>
+                                        <td>{{ _('Texto') }}</td>
+                                        <td><span class="badge bg-danger">{{ _('Sí') }}</span></td>
+                                        <td>EMP001</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>B</strong></td>
+                                        <td>{{ _('Código de Prestación') }}</td>
+                                        <td>{{ _('Texto') }}</td>
+                                        <td><span class="badge bg-danger">{{ _('Sí') }}</span></td>
+                                        <td>AGUINALDO</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>C</strong></td>
+                                        <td>{{ _('Año de Corte') }}</td>
+                                        <td>{{ _('Número') }}</td>
+                                        <td><span class="badge bg-danger">{{ _('Sí') }}</span></td>
+                                        <td>2024</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>D</strong></td>
+                                        <td>{{ _('Mes de Corte') }}</td>
+                                        <td>{{ _('Número (1-12)') }}</td>
+                                        <td><span class="badge bg-danger">{{ _('Sí') }}</span></td>
+                                        <td>12</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>E</strong></td>
+                                        <td>{{ _('Código de Moneda') }}</td>
+                                        <td>{{ _('Texto') }}</td>
+                                        <td><span class="badge bg-danger">{{ _('Sí') }}</span></td>
+                                        <td>NIO</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>F</strong></td>
+                                        <td>{{ _('Saldo Acumulado') }}</td>
+                                        <td>{{ _('Número') }}</td>
+                                        <td><span class="badge bg-danger">{{ _('Sí') }}</span></td>
+                                        <td>15000.50</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>G</strong></td>
+                                        <td>{{ _('Tipo de Cambio') }}</td>
+                                        <td>{{ _('Número') }}</td>
+                                        <td><span class="badge bg-secondary">{{ _('No') }}</span></td>
+                                        <td>1.0</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>H</strong></td>
+                                        <td>{{ _('Observaciones') }}</td>
+                                        <td>{{ _('Texto') }}</td>
+                                        <td><span class="badge bg-secondary">{{ _('No') }}</span></td>
+                                        <td>{{ _('Saldo al inicio del sistema') }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            
+                            <div class="alert alert-warning mt-3">
+                                <strong>{{ _('Requisitos:') }}</strong>
+                                <ul class="mb-0">
+                                    <li>{{ _('Los empleados deben existir en el sistema y estar activos.') }}</li>
+                                    <li>{{ _('Las prestaciones deben existir en el sistema y estar activas.') }}</li>
+                                    <li>{{ _('Las monedas deben existir en el sistema y estar activas.') }}</li>
+                                    <li>{{ _('Los registros se crean en estado "draft" y deben aplicarse individualmente desde la lista de cargas.') }}</li>
+                                    <li><strong>{{ _('IMPORTANTE: El archivo Excel NO debe tener encabezados. Los datos comienzan en la fila 1.') }}</strong></li>
+                                </ul>
+                            </div>
+                            
+                            <div class="alert alert-success">
+                                <strong>{{ _('Ejemplo de archivo Excel:') }}</strong>
+                                <table class="table table-sm table-bordered mt-2 bg-white">
+                                    <tbody>
+                                        <tr>
+                                            <td>EMP001</td>
+                                            <td>AGUINALDO</td>
+                                            <td>2024</td>
+                                            <td>12</td>
+                                            <td>NIO</td>
+                                            <td>15000.50</td>
+                                            <td>1.0</td>
+                                            <td>{{ _('Saldo inicial 2024') }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>EMP002</td>
+                                            <td>VACACIONES</td>
+                                            <td>2024</td>
+                                            <td>12</td>
+                                            <td>NIO</td>
+                                            <td>8500.00</td>
+                                            <td>1.0</td>
+                                            <td>{{ _('Prestaciones acumuladas') }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>EMP003</td>
+                                            <td>INDEMNIZACION</td>
+                                            <td>2024</td>
+                                            <td>12</td>
+                                            <td>USD</td>
+                                            <td>500.00</td>
+                                            <td>36.50</td>
+                                            <td></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0">{{ _('Subir Archivo') }}</h5>
+                        </div>
+                        <div class="card-body">
+                            <form method="POST" enctype="multipart/form-data">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <div class="form-group mb-3">
+                                    <label for="file" class="form-label required">{{ _('Archivo Excel') }}</label>
+                                    <input type="file" 
+                                           class="form-control" 
+                                           id="file" 
+                                           name="file" 
+                                           accept=".xlsx,.xls"
+                                           required>
+                                    <small class="form-text text-muted">
+                                        {{ _('Formatos aceptados: .xlsx, .xls') }}
+                                    </small>
+                                </div>
+                                
+                                <div class="form-group mt-4">
+                                    <button type="submit" class="btn btn-primary btn-lg">
+                                        <i class="bi bi-upload"></i> {{ _('Cargar Saldos Iniciales') }}
+                                    </button>
+                                    <a href="{{ url_for('prestacion_management.dashboard') }}" class="btn btn-secondary">
+                                        {{ _('Cancelar') }}
+                                    </a>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-primary mt-4">
+                        <i class="bi bi-lightbulb"></i>
+                        <strong>{{ _('Consejo:') }}</strong> 
+                        {{ _('Después de cargar el archivo, los registros estarán en estado "draft". Revise la') }} 
+                        <a href="{{ url_for('carga_inicial_prestacion.index') }}">{{ _('lista de cargas') }}</a>
+                        {{ _('y aplique cada registro individualmente para crear las transacciones en el sistema.') }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

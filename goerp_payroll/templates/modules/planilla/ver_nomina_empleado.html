@@ -1,0 +1,435 @@
+﻿{#-
+SPDX-License-Identifier: Apache-2.0
+SPDX-FileCopyrightText: 2025 - 2026 BMO Soluciones, S.A.
+-#}
+
+{% extends "base.html" %}
+{% block content %}
+<div class="content-header">
+    <h3>
+        Detalle de Nómina: {{ nomina_empleado.empleado.primer_nombre }} {{ nomina_empleado.empleado.primer_apellido }}
+    </h3>
+    <a href="{{ url_for('planilla.ver_nomina', planilla_id=planilla.id, nomina_id=nomina.id) }}"
+        class="btn btn-secondary">
+        <i class="bi bi-arrow-left"></i> Volver a la Nómina
+    </a>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">Información del Empleado</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-4">
+                <strong>Nombre Completo:</strong><br>
+                {{ nomina_empleado.empleado.primer_nombre }}
+                {% if nomina_empleado.empleado.segundo_nombre %}{{ nomina_empleado.empleado.segundo_nombre }}{% endif %}
+                {{ nomina_empleado.empleado.primer_apellido }}
+                {% if nomina_empleado.empleado.segundo_apellido %}{{ nomina_empleado.empleado.segundo_apellido }}{% endif %}
+            </div>
+            <div class="col-md-2">
+                <strong>Identificación:</strong><br>
+                {{ nomina_empleado.empleado.identificacion_personal }}
+            </div>
+            <div class="col-md-3">
+                <strong>Cargo:</strong><br>
+                {{ nomina_empleado.cargo_snapshot or nomina_empleado.empleado.cargo or 'N/A' }}
+            </div>
+            <div class="col-md-3">
+                <strong>Área:</strong><br>
+                {{ nomina_empleado.area_snapshot or nomina_empleado.empleado.area or 'N/A' }}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Resumen -->
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header bg-info text-white">
+                <h6 class="mb-0">Resumen</h6>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm mb-0">
+                    <tr>
+                        <td>Salario Base:</td>
+                        <td class="text-right">{{ "{:,.2f}".format(salario_base_visual|float) }}</td>
+                    </tr>
+                    <tr>
+                        <td>Total Ingresos:</td>
+                        <td class="text-right text-primary">
+                            +{{ "{:,.2f}".format(nomina_empleado.total_ingresos|float) }}</td>
+                    </tr>
+                    <tr class="table-light">
+                        <td><strong>Salario Bruto:</strong></td>
+                        <td class="text-right">
+                            <strong>{{ "{:,.2f}".format(nomina_empleado.salario_bruto|float) }}</strong></td>
+                    </tr>
+                    <tr>
+                        <td>Total Deducciones:</td>
+                        <td class="text-right text-danger">
+                            -{{ "{:,.2f}".format(nomina_empleado.total_deducciones|float) }}</td>
+                    </tr>
+                    <tr class="table-success">
+                        <td><strong>Salario Neto:</strong></td>
+                        <td class="text-right">
+                            <strong>{{ "{:,.2f}".format(nomina_empleado.salario_neto|float) }}</strong></td>
+                    </tr>
+                    {% if nomina_empleado.tipo_cambio_aplicado and nomina_empleado.tipo_cambio_aplicado != 1 %}
+                    <tr>
+                        <td>Tipo de Cambio:</td>
+                        <td class="text-right">{{ "{:.4f}".format(nomina_empleado.tipo_cambio_aplicado|float) }}</td>
+                    </tr>
+                    {% endif %}
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Percepciones -->
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h6 class="mb-0">Percepciones (Ingresos)</h6>
+            </div>
+            <div class="card-body p-0">
+                {% if percepciones %}
+                <table class="table table-sm mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Concepto</th>
+                            <th class="text-right">Monto</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in percepciones %}
+                        <tr>
+                            <td>
+                                <small class="text-muted">[{{ p.codigo }}]</small><br>
+                                {{ p.descripcion }}
+                            </td>
+                            <td class="text-right">{{ "{:,.2f}".format(p.monto|float) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot class="table-primary">
+                        <tr>
+                            <th>Total Percepciones</th>
+                            <th class="text-right">{{ "{:,.2f}".format(nomina_empleado.total_ingresos|float) }}</th>
+                        </tr>
+                    </tfoot>
+                </table>
+                {% else %}
+                <div class="p-3 text-muted">
+                    <em>Sin percepciones adicionales</em>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Deducciones -->
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header bg-danger text-white">
+                <h6 class="mb-0">Deducciones</h6>
+            </div>
+            <div class="card-body p-0">
+                {% if deducciones %}
+                <table class="table table-sm mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Concepto</th>
+                            <th class="text-right">Monto</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for d in deducciones %}
+                        <tr>
+                            <td>
+                                <small class="text-muted">[{{ d.codigo }}]</small><br>
+                                {{ d.descripcion }}
+                            </td>
+                            <td class="text-right">{{ "{:,.2f}".format(d.monto|float) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot class="table-danger">
+                        <tr>
+                            <th>Total Deducciones</th>
+                            <th class="text-right">{{ "{:,.2f}".format(nomina_empleado.total_deducciones|float) }}</th>
+                        </tr>
+                    </tfoot>
+                </table>
+                {% else %}
+                <div class="p-3 text-muted">
+                    <em>Sin deducciones</em>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header bg-light">
+        <h6 class="mb-0">Novedades Aplicadas al Calculo</h6>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-lg-5 mb-3 mb-lg-0">
+                <h6 class="text-muted text-uppercase small mb-2">Resumen Dinamico</h6>
+                <table class="table table-sm mb-0">
+                    <tr>
+                        <td>Total novedades aplicadas</td>
+                        <td class="text-right"><strong>{{ resumen_novedades.total }}</strong></td>
+                    </tr>
+                    <tr>
+                        <td>Con referencia de percepcion</td>
+                        <td class="text-right">{{ resumen_novedades.con_percepcion }}</td>
+                    </tr>
+                    <tr>
+                        <td>Con referencia de deduccion</td>
+                        <td class="text-right">{{ resumen_novedades.con_deduccion }}</td>
+                    </tr>
+                    <tr>
+                        <td>Sin referencia de catalogo</td>
+                        <td class="text-right">{{ resumen_novedades.sin_referencia_catalogo }}</td>
+                    </tr>
+                </table>
+
+                <h6 class="text-muted text-uppercase small mt-3 mb-2">Distribucion por tipo de valor</h6>
+                {% if resumen_novedades.conteo_tipo_valor %}
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Tipo</th>
+                                <th class="text-right">Novedades</th>
+                                <th class="text-right">Valor Acumulado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for tipo_valor, total_novedades in resumen_novedades.conteo_tipo_valor.items() %}
+                            <tr>
+                                <td><code>{{ tipo_valor }}</code></td>
+                                <td class="text-right">{{ total_novedades }}</td>
+                                <td class="text-right">
+                                    {{ "{:,.2f}".format(resumen_novedades.acumulado_tipo_valor.get(tipo_valor, 0)|float) }}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted mb-0"><em>No hay tipos de valor registrados.</em></p>
+                {% endif %}
+            </div>
+
+            <div class="col-lg-7">
+                <h6 class="text-muted text-uppercase small mb-2">Conciliacion de Salario Base</h6>
+                <div class="table-responsive">
+                    <table class="table table-sm mb-3">
+                        <tr>
+                            <td>Salario base historico</td>
+                            <td class="text-right">
+                                {{ "{:,.2f}".format(conciliacion_salario_base.salario_base_historico|float) }}</td>
+                        </tr>
+                        <tr>
+                            <td>(-) Ajuste total aplicado al salario base</td>
+                            <td class="text-right text-danger">
+                                -{{ "{:,.2f}".format(conciliacion_salario_base.ajuste_total_salario_base|float) }}</td>
+                        </tr>
+                        <tr class="table-light">
+                            <td><strong>Salario base resultante</strong></td>
+                            <td class="text-right">
+                                <strong>{{ "{:,.2f}".format(conciliacion_salario_base.salario_base_resultante|float) }}</strong>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+
+                {% if conciliacion_salario_base.configuracion_contexto %}
+                <h6 class="text-muted text-uppercase small mb-2">Configuracion utilizada en esta nomina</h6>
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Parametro</th>
+                                <th class="text-right">Valor</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for clave, valor in conciliacion_salario_base.configuracion_contexto|dictsort %}
+                            <tr>
+                                <td><code>{{ clave }}</code></td>
+                                <td class="text-right">{{ valor }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <hr>
+
+        <h6 class="mb-2">Detalle de Novedades Aplicadas</h6>
+        {% if novedades_aplicadas %}
+        <div class="table-responsive">
+            <table class="table table-striped align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Codigo</th>
+                        <th>Concepto</th>
+                        <th>Tipo Valor</th>
+                        <th class="text-right">Cantidad</th>
+                        <th class="text-right">Monto</th>
+                        <th>Detalle Monto</th>
+                        <th>Indicadores</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for novedad in novedades_aplicadas %}
+                    <tr>
+                        <td>{{ novedad.fecha_novedad.strftime('%d/%m/%Y') if novedad.fecha_novedad else '-' }}</td>
+                        <td><code>{{ novedad.codigo_concepto }}</code></td>
+                        <td>
+                            {% if novedad.percepcion_id %}
+                            {{ percepcion_catalogo.get(novedad.percepcion_id, novedad.codigo_concepto) }}
+                            <span class="badge bg-primary text-white ml-1">Percepcion</span>
+                            {% elif novedad.deduccion_id %}
+                            {{ deduccion_catalogo.get(novedad.deduccion_id, novedad.codigo_concepto) }}
+                            <span class="badge bg-danger text-white ml-1">Deduccion</span>
+                            {% else %}
+                            {{ novedad.codigo_concepto }}
+                            <span class="badge bg-secondary text-white ml-1">General</span>
+                            {% endif %}
+                        </td>
+                        <td><code>{{ novedad.tipo_valor or '-' }}</code></td>
+                        <td class="text-right">{{ "{:,.2f}".format(novedad.valor_cantidad|float) }}</td>
+                        {% set ref_monto = monto_novedad_referencia.get(novedad.id|string) %}
+                        <td class="text-right">
+                            {% if ref_monto and ref_monto.monto is not none %}
+                            <strong>{{ "{:,.2f}".format(ref_monto.monto|float) }}</strong>
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if ref_monto and ref_monto.detalle %}
+                            {{ ref_monto.detalle }}
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% set total_indicadores = 0 %}
+                            {% if novedad.es_inasistencia %}
+                            {% set total_indicadores = total_indicadores + 1 %}
+                            <span class="badge bg-warning text-dark">es_inasistencia</span>
+                            {% endif %}
+                            {% if novedad.descontar_pago_inasistencia %}
+                            {% set total_indicadores = total_indicadores + 1 %}
+                            <span class="badge bg-danger text-white">descontar_pago</span>
+                            {% endif %}
+                            {% if novedad.es_descanso_vacaciones %}
+                            {% set total_indicadores = total_indicadores + 1 %}
+                            <span class="badge bg-info text-dark">descanso</span>
+                            {% endif %}
+                            {% if total_indicadores == 0 %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if novedad.estado == 'executed' %}
+                            <span class="badge bg-success text-white">executed</span>
+                            {% elif novedad.estado == 'pending' %}
+                            <span class="badge bg-warning text-dark">pending</span>
+                            {% else %}
+                            <span class="badge bg-secondary text-white">{{ novedad.estado }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted mb-0"><em>No hay novedades aplicadas para este empleado en esta nomina.</em></p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Prestaciones (Costo Empleador) -->
+{% if prestaciones %}
+<div class="card mb-4">
+    <div class="card-header bg-warning">
+        <h6 class="mb-0">Prestaciones (Costo Empleador - No afecta salario neto)</h6>
+    </div>
+    <div class="card-body">
+        <table class="table table-sm">
+            <thead>
+                <tr>
+                    <th>Código</th>
+                    <th>Concepto</th>
+                    <th class="text-right">Monto</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in prestaciones %}
+                <tr>
+                    <td><code>{{ p.codigo }}</code></td>
+                    <td>{{ p.descripcion }}</td>
+                    <td class="text-right">{{ "{:,.2f}".format(p.monto|float) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot class="table-warning">
+                <tr>
+                    <th colspan="2">Total Prestaciones (Costo Empleador)</th>
+                    <th class="text-right">
+                        {% set total_prestaciones = prestaciones|map(attribute='monto')|sum %}
+                        {{ "{:,.2f}".format(total_prestaciones|float) }}
+                    </th>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<div class="card">
+    <div class="card-header">
+        <h6 class="mb-0">Período de Nómina</h6>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-4">
+                <strong>Período:</strong><br>
+                {{ nomina.periodo_inicio.strftime('%d/%m/%Y') }} - {{ nomina.periodo_fin.strftime('%d/%m/%Y') }}
+            </div>
+            <div class="col-md-4">
+                <strong>Fecha de Generación:</strong><br>
+                {{ nomina.fecha_generacion.strftime('%d/%m/%Y %H:%M') }}
+            </div>
+            <div class="col-md-4">
+                <strong>Estado:</strong><br>
+                {% if nomina.estado == 'generated' %}
+                <span class="badge badge-warning">Generado</span>
+                {% elif nomina.estado == 'approved' %}
+                <span class="badge badge-info">Aprobado</span>
+                {% elif nomina.estado == 'applied' %}
+                <span class="badge badge-success">Aplicado</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

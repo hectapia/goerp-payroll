@@ -1,0 +1,112 @@
+{#-
+SPDX-License-Identifier: Apache-2.0
+SPDX-FileCopyrightText: 2025 - 2026 BMO Soluciones, S.A.
+-#}
+
+{% extends 'base.html' %}
+{% from 'macros.html' import render_pagination %}
+
+{% block content %}
+<div class="container">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-file-earmark-text me-2"></i>{{ _('Liquidaciones') }}</h2>
+        <a href="{{ url_for('liquidacion.nueva') }}" class="btn btn-primary">
+            <i class="bi bi-plus-circle me-1"></i>{{ _('Nueva Liquidación') }}
+        </a>
+    </div>
+
+    <!-- Filter Form -->
+    <div class="card mb-3">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="bi bi-funnel me-1"></i>{{ _('Filtros') }}
+            </h5>
+        </div>
+        <div class="card-body">
+            <form method="GET" action="{{ url_for('liquidacion.index') }}">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label for="buscar" class="form-label">{{ _('Buscar Empleado') }}</label>
+                        <input type="text" class="form-control" id="buscar" name="buscar" 
+                               value="{{ buscar or '' }}" 
+                               placeholder="{{ _('Nombre, código o identificación...') }}">
+                    </div>
+                    <div class="col-md-2">
+                        <label for="estado" class="form-label">{{ _('Estado') }}</label>
+                        <select class="form-select" id="estado" name="estado">
+                            <option value="">{{ _('Todos') }}</option>
+                            <option value="draft" {% if estado == 'draft' %}selected{% endif %}>{{ _('Borrador') }}</option>
+                            <option value="calculated" {% if estado == 'calculated' %}selected{% endif %}>{{ _('Calculada') }}</option>
+                            <option value="applied" {% if estado == 'applied' %}selected{% endif %}>{{ _('Aplicada') }}</option>
+                            <option value="paid" {% if estado == 'paid' %}selected{% endif %}>{{ _('Pagada') }}</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="fecha_desde" class="form-label">{{ _('Fecha desde') }}</label>
+                        <input type="date" class="form-control" id="fecha_desde" name="fecha_desde" value="{{ fecha_desde or '' }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="fecha_hasta" class="form-label">{{ _('Fecha hasta') }}</label>
+                        <input type="date" class="form-control" id="fecha_hasta" name="fecha_hasta" value="{{ fecha_hasta or '' }}">
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-search me-1"></i>{{ _('Buscar') }}
+                        </button>
+                        <a href="{{ url_for('liquidacion.index') }}" class="btn btn-secondary">
+                            <i class="bi bi-x-circle me-1"></i>{{ _('Limpiar') }}
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            {% if liquidaciones %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>{{ _('Empleado') }}</th>
+                                <th>{{ _('Fecha Cálculo') }}</th>
+                                <th>{{ _('Días por Pagar') }}</th>
+                                <th>{{ _('Total Neto') }}</th>
+                                <th>{{ _('Estado') }}</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for l in liquidaciones %}
+                                <tr>
+                                    <td>
+                                        {% if l.empleado %}
+                                            {{ l.empleado.primer_nombre }} {{ l.empleado.primer_apellido }}
+                                        {% else %}
+                                            {{ l.empleado_id }}
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ l.fecha_calculo }}</td>
+                                    <td>{{ l.dias_por_pagar }}</td>
+                                    <td>{{ l.total_neto }}</td>
+                                    <td>{{ l.estado }}</td>
+                                    <td>
+                                        <a class="btn btn-sm btn-outline-primary" href="{{ url_for('liquidacion.ver', liquidacion_id=l.id) }}">{{ _('Ver') }}</a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {{ render_pagination(pagination, 'liquidacion.index') }}
+            {% else %}
+                <p class="text-muted mb-0">{{ _('No hay liquidaciones registradas.') }}</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

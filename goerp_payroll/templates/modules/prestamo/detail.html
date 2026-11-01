@@ -1,0 +1,448 @@
+{#-
+SPDX-License-Identifier: Apache-2.0
+SPDX-FileCopyrightText: 2025 - 2026 BMO Soluciones, S.A.
+-#}
+
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container-fluid">
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            <i class="bi bi-cash-coin me-2"></i>
+            {{ _('Detalle de Préstamo/Adelanto') }}
+        </h2>
+        <a href="{{ url_for('prestamo.index') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i>{{ _('Volver') }}
+        </a>
+    </div>
+
+    <div class="row">
+        <!-- Loan Information Card -->
+        <div class="col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">{{ _('Información General') }}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-2">
+                        <div class="col-6 fw-bold">{{ _('Estado:') }}</div>
+                        <div class="col-6">
+                            {% if prestamo.estado == 'draft' %}
+                                <span class="badge bg-secondary">{{ _('Borrador') }}</span>
+                            {% elif prestamo.estado == 'pending' %}
+                                <span class="badge bg-warning text-dark">{{ _('Pendiente') }}</span>
+                            {% elif prestamo.estado == 'approved' %}
+                                <span class="badge bg-success">{{ _('Aprobado') }}</span>
+                            {% elif prestamo.estado == 'applied' %}
+                                <span class="badge bg-success">{{ _('Aplicado') }}</span>
+                            {% elif prestamo.estado == 'paid' %}
+                                <span class="badge bg-dark">{{ _('Pagado') }}</span>
+                            {% elif prestamo.estado == 'rejected' %}
+                                <span class="badge bg-danger">{{ _('Rechazado') }}</span>
+                            {% elif prestamo.estado == 'cancelled' %}
+                                <span class="badge bg-secondary">{{ _('Cancelado') }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-6 fw-bold">{{ _('Tipo:') }}</div>
+                        <div class="col-6">
+                            {% if prestamo.tipo == 'advance' %}
+                                <span class="badge bg-info">{{ _('Adelanto de Salario') }}</span>
+                            {% else %}
+                                <span class="badge bg-primary">{{ _('Préstamo') }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-6 fw-bold">{{ _('Empleado:') }}</div>
+                        <div class="col-6">
+                            {{ prestamo.empleado.primer_nombre }} {{ prestamo.empleado.primer_apellido }}<br>
+                            <small class="text-muted">{{ prestamo.empleado.codigo_empleado }}</small>
+                        </div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-6 fw-bold">{{ _('Fecha de Solicitud:') }}</div>
+                        <div class="col-6">{{ prestamo.fecha_solicitud.strftime('%d/%m/%Y') }}</div>
+                    </div>
+                    {% if prestamo.fecha_aprobacion %}
+                    <div class="row mb-2">
+                        <div class="col-6 fw-bold">{{ _('Fecha de Aprobación:') }}</div>
+                        <div class="col-6">{{ prestamo.fecha_aprobacion.strftime('%d/%m/%Y') }}</div>
+                    </div>
+                    {% endif %}
+                    {% if prestamo.fecha_desembolso %}
+                    <div class="row mb-2">
+                        <div class="col-6 fw-bold">{{ _('Fecha de Desembolso:') }}</div>
+                        <div class="col-6">{{ prestamo.fecha_desembolso.strftime('%d/%m/%Y') }}</div>
+                    </div>
+                    {% endif %}
+                    {% if prestamo.motivo %}
+                    <div class="row mb-2">
+                        <div class="col-6 fw-bold">{{ _('Motivo:') }}</div>
+                        <div class="col-6">{{ prestamo.motivo }}</div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Financial Details Card -->
+        <div class="col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">{{ _('Información Financiera') }}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-2">
+                        <div class="col-6 fw-bold">{{ _('Monto Solicitado:') }}</div>
+                        <div class="col-6">
+                            {% if prestamo.moneda %}
+                                {{ prestamo.moneda.simbolo or prestamo.moneda.codigo }}
+                            {% endif %}
+                            {{ "{:,.2f}".format(prestamo.monto_solicitado) }}
+                        </div>
+                    </div>
+                    {% if prestamo.monto_aprobado %}
+                    <div class="row mb-2">
+                        <div class="col-6 fw-bold">{{ _('Monto Aprobado:') }}</div>
+                        <div class="col-6 text-success">
+                            {% if prestamo.moneda %}
+                                {{ prestamo.moneda.simbolo or prestamo.moneda.codigo }}
+                            {% endif %}
+                            {{ "{:,.2f}".format(prestamo.monto_aprobado) }}
+                        </div>
+                    </div>
+                    {% endif %}
+                    <div class="row mb-2">
+                        <div class="col-6 fw-bold">{{ _('Saldo Pendiente:') }}</div>
+                        <div class="col-6 text-danger fs-5">
+                            {% if prestamo.moneda %}
+                                {{ prestamo.moneda.simbolo or prestamo.moneda.codigo }}
+                            {% endif %}
+                            {{ "{:,.2f}".format(prestamo.saldo_pendiente) }}
+                        </div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-6 fw-bold">{{ _('Número de Cuotas:') }}</div>
+                        <div class="col-6">{{ prestamo.cuotas_pactadas }}</div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-6 fw-bold">{{ _('Monto por Cuota:') }}</div>
+                        <div class="col-6">
+                            {% if prestamo.moneda %}
+                                {{ prestamo.moneda.simbolo or prestamo.moneda.codigo }}
+                            {% endif %}
+                            {{ "{:,.2f}".format(prestamo.monto_por_cuota or 0) }}
+                        </div>
+                    </div>
+                    {% if prestamo.tasa_interes and prestamo.tasa_interes > 0 %}
+                    <div class="row mb-2">
+                        <div class="col-6 fw-bold">{{ _('Tasa de Interés:') }}</div>
+                        <div class="col-6">{{ "{:.4f}".format(prestamo.tasa_interes) }}%</div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-6 fw-bold">{{ _('Tipo de Interés:') }}</div>
+                        <div class="col-6">{{ prestamo.tipo_interes|title }}</div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-6 fw-bold">{{ _('Método de Amortización:') }}</div>
+                        <div class="col-6">
+                            {% if prestamo.metodo_amortizacion == 'french' %}
+                                {{ _('Francés - Cuota Constante') }}
+                            {% elif prestamo.metodo_amortizacion == 'german' %}
+                                {{ _('Alemán - Amortización Constante') }}
+                            {% else %}
+                                {{ prestamo.metodo_amortizacion|title }}
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-6 fw-bold">{{ _('Interés Acumulado:') }}</div>
+                        <div class="col-6 text-warning">
+                            {% if prestamo.moneda %}
+                                {{ prestamo.moneda.simbolo or prestamo.moneda.codigo }}
+                            {% endif %}
+                            {{ "{:,.2f}".format(prestamo.interes_acumulado or 0) }}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex gap-2 flex-wrap">
+                        {% if prestamo.estado == 'draft' %}
+                            <a href="{{ url_for('prestamo.edit', prestamo_id=prestamo.id) }}" class="btn btn-warning">
+                                <i class="bi bi-pencil me-1"></i>{{ _('Editar') }}
+                            </a>
+                            <form method="POST" action="{{ url_for('prestamo.submit', prestamo_id=prestamo.id) }}" class="d-inline">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-send me-1"></i>{{ _('Enviar para Aprobación') }}
+                                </button>
+                            </form>
+                        {% endif %}
+                        
+                        {% if prestamo.estado in ['pending', 'draft'] %}
+                            <a href="{{ url_for('prestamo.approve', prestamo_id=prestamo.id) }}" class="btn btn-success">
+                                <i class="bi bi-check-circle me-1"></i>{{ _('Aprobar/Rechazar') }}
+                            </a>
+                        {% endif %}
+                        
+                        {% if prestamo.estado in ['approved', 'applied'] and prestamo.saldo_pendiente > 0 %}
+                            <a href="{{ url_for('prestamo.pago_extraordinario', prestamo_id=prestamo.id) }}" class="btn btn-info">
+                                <i class="bi bi-cash-stack me-1"></i>{{ _('Registrar Pago Extraordinario') }}
+                            </a>
+                            <a href="{{ url_for('prestamo.condonacion', prestamo_id=prestamo.id) }}" class="btn btn-warning">
+                                <i class="bi bi-heart me-1"></i>{{ _('Condonar Deuda') }}
+                            </a>
+                        {% endif %}
+                        
+                        {% if prestamo.estado not in ['paid', 'cancelled'] %}
+                            <form method="POST" action="{{ url_for('prestamo.cancel', prestamo_id=prestamo.id) }}" class="d-inline"
+                                  onsubmit="return confirm('{{ _('¿Está seguro de cancelar este préstamo?') }}');">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-danger">
+                                    <i class="bi bi-x-circle me-1"></i>{{ _('Cancelar Préstamo') }}
+                                </button>
+                            </form>
+                        {% endif %}
+                        
+                        {% if tabla_pago %}
+                            <a href="{{ url_for('prestamo.export_excel', prestamo_id=prestamo.id) }}" class="btn btn-success">
+                                <i class="bi bi-file-earmark-excel me-1"></i>{{ _('Exportar Excel') }}
+                            </a>
+                            <a href="{{ url_for('prestamo.export_pdf', prestamo_id=prestamo.id) }}" class="btn btn-danger">
+                                <i class="bi bi-file-earmark-pdf me-1"></i>{{ _('Exportar PDF') }}
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Schedule -->
+    {% if tabla_pago %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">{{ _('Tabla de Pagos') }}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>{{ _('Fecha Estimada') }}</th>
+                                    <th class="text-end">{{ _('Cuota') }}</th>
+                                    <th class="text-end">{{ _('Interés') }}</th>
+                                    <th class="text-end">{{ _('Capital') }}</th>
+                                    <th class="text-end">{{ _('Saldo') }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in tabla_pago %}
+                                <tr>
+                                    <td>{{ item.numero }}</td>
+                                    <td>
+                                        {% if item.fecha_estimada %}
+                                            {{ item.fecha_estimada.strftime('%d/%m/%Y') }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end">
+                                        {% if prestamo.moneda %}
+                                            {{ prestamo.moneda.simbolo or prestamo.moneda.codigo }}
+                                        {% endif %}
+                                        {{ "{:,.2f}".format(item.cuota) }}
+                                    </td>
+                                    <td class="text-end">
+                                        {% if prestamo.moneda %}
+                                            {{ prestamo.moneda.simbolo or prestamo.moneda.codigo }}
+                                        {% endif %}
+                                        {{ "{:,.2f}".format(item.interes) }}
+                                    </td>
+                                    <td class="text-end">
+                                        {% if prestamo.moneda %}
+                                            {{ prestamo.moneda.simbolo or prestamo.moneda.codigo }}
+                                        {% endif %}
+                                        {{ "{:,.2f}".format(item.capital) }}
+                                    </td>
+                                    <td class="text-end">
+                                        {% if prestamo.moneda %}
+                                            {{ prestamo.moneda.simbolo or prestamo.moneda.codigo }}
+                                        {% endif %}
+                                        {{ "{:,.2f}".format(item.saldo) }}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Interest Journal -->
+    {% if prestamo.tasa_interes and prestamo.tasa_interes > 0 %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">{{ _('Diario de Intereses') }}</h5>
+                </div>
+                <div class="card-body">
+                    {% if intereses %}
+                    <div class="table-responsive">
+                        <table class="table table-striped table-sm">
+                            <thead>
+                                <tr>
+                                    <th>{{ _('Período') }}</th>
+                                    <th>{{ _('Días') }}</th>
+                                    <th class="text-end">{{ _('Saldo Base') }}</th>
+                                    <th class="text-end">{{ _('Tasa (%)') }}</th>
+                                    <th class="text-end">{{ _('Interés Calculado') }}</th>
+                                    <th class="text-end">{{ _('Saldo Posterior') }}</th>
+                                    <th>{{ _('Nómina') }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for interes in intereses %}
+                                <tr>
+                                    <td>
+                                        {{ interes.fecha_desde.strftime('%d/%m/%Y') }} -
+                                        {{ interes.fecha_hasta.strftime('%d/%m/%Y') }}
+                                    </td>
+                                    <td>{{ interes.dias_transcurridos }}</td>
+                                    <td class="text-end">
+                                        {% if prestamo.moneda %}
+                                            {{ prestamo.moneda.simbolo or prestamo.moneda.codigo }}
+                                        {% endif %}
+                                        {{ "{:,.2f}".format(interes.saldo_base) }}
+                                    </td>
+                                    <td class="text-end">{{ "{:.4f}".format(interes.tasa_aplicada) }}</td>
+                                    <td class="text-end text-warning fw-bold">
+                                        {% if prestamo.moneda %}
+                                            {{ prestamo.moneda.simbolo or prestamo.moneda.codigo }}
+                                        {% endif %}
+                                        {{ "{:,.2f}".format(interes.interes_calculado) }}
+                                    </td>
+                                    <td class="text-end">
+                                        {% if prestamo.moneda %}
+                                            {{ prestamo.moneda.simbolo or prestamo.moneda.codigo }}
+                                        {% endif %}
+                                        {{ "{:,.2f}".format(interes.saldo_posterior) }}
+                                    </td>
+                                    <td>
+                                        {% if interes.nomina_id %}
+                                            <span class="badge bg-primary">{{ _('Nómina') }}</span>
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center py-4">{{ _('No se han calculado intereses aún.') }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Payment History -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0">{{ _('Historial de Pagos') }}</h5>
+                </div>
+                <div class="card-body">
+                    {% if abonos %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>{{ _('Fecha') }}</th>
+                                    <th>{{ _('Tipo') }}</th>
+                                    <th class="text-end">{{ _('Monto Abonado') }}</th>
+                                    <th class="text-end">{{ _('Saldo Anterior') }}</th>
+                                    <th class="text-end">{{ _('Saldo Posterior') }}</th>
+                                    <th>{{ _('Comprobante') }}</th>
+                                    <th>{{ _('Observaciones') }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for abono in abonos %}
+                                <tr>
+                                    <td>{{ abono.fecha_abono.strftime('%d/%m/%Y') }}</td>
+                                    <td>
+                                        {% if abono.tipo_abono == 'manual' %}
+                                            <span class="badge bg-warning text-dark">{{ _('Manual') }}</span>
+                                        {% else %}
+                                            <span class="badge bg-primary">{{ _('Nómina') }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end">
+                                        {% if prestamo.moneda %}
+                                            {{ prestamo.moneda.simbolo or prestamo.moneda.codigo }}
+                                        {% endif %}
+                                        {{ "{:,.2f}".format(abono.monto_abonado) }}
+                                    </td>
+                                    <td class="text-end">
+                                        {% if prestamo.moneda %}
+                                            {{ prestamo.moneda.simbolo or prestamo.moneda.codigo }}
+                                        {% endif %}
+                                        {{ "{:,.2f}".format(abono.saldo_anterior) }}
+                                    </td>
+                                    <td class="text-end">
+                                        {% if prestamo.moneda %}
+                                            {{ prestamo.moneda.simbolo or prestamo.moneda.codigo }}
+                                        {% endif %}
+                                        {{ "{:,.2f}".format(abono.saldo_posterior) }}
+                                    </td>
+                                    <td>
+                                        {% if abono.tipo_comprobante %}
+                                            <strong>{{ abono.tipo_comprobante|replace('_', ' ')|title }}:</strong><br>
+                                            {{ abono.numero_comprobante }}
+                                            {% if abono.referencia_bancaria %}
+                                                <br><small class="text-muted">Ref: {{ abono.referencia_bancaria }}</small>
+                                            {% endif %}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ abono.observaciones or '-' }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center py-4">{{ _('No hay pagos registrados.') }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

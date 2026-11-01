@@ -1,0 +1,214 @@
+{#-
+SPDX-License-Identifier: Apache-2.0
+SPDX-FileCopyrightText: 2025 - 2026 BMO Soluciones, S.A.
+-#}
+
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            <i class="bi bi-cash-stack me-2"></i>
+            {{ _('Registrar Pago Extraordinario') }}
+        </h2>
+        <a href="{{ url_for('prestamo.detail', prestamo_id=prestamo.id) }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i>{{ _('Volver') }}
+        </a>
+    </div>
+
+    <!-- Loan Summary -->
+    <div class="card mb-4">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0">{{ _('Información del Préstamo') }}</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4">
+                    <p><strong>{{ _('Empleado:') }}</strong> {{ prestamo.empleado.primer_nombre }} {{ prestamo.empleado.primer_apellido }}</p>
+                    <p><strong>{{ _('Código:') }}</strong> {{ prestamo.empleado.codigo_empleado }}</p>
+                </div>
+                <div class="col-md-4">
+                    <p><strong>{{ _('Saldo Pendiente:') }}</strong> 
+                        <span class="text-danger fs-5">
+                            {% if prestamo.moneda %}
+                                {{ prestamo.moneda.simbolo or prestamo.moneda.codigo }}
+                            {% endif %}
+                            {{ "{:,.2f}".format(prestamo.saldo_pendiente) }}
+                        </span>
+                    </p>
+                </div>
+                <div class="col-md-4">
+                    <p><strong>{{ _('Monto por Cuota:') }}</strong> 
+                        {% if prestamo.moneda %}
+                            {{ prestamo.moneda.simbolo or prestamo.moneda.codigo }}
+                        {% endif %}
+                        {{ "{:,.2f}".format(prestamo.monto_por_cuota or 0) }}
+                    </p>
+                    <p><strong>{{ _('Cuotas Pactadas:') }}</strong> {{ prestamo.cuotas_pactadas }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Form -->
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">{{ _('Datos del Pago Extraordinario') }}</h5>
+        </div>
+        <div class="card-body">
+            <form method="POST" novalidate>
+                {{ form.hidden_tag() }}
+                
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle me-2"></i>
+                    <strong>{{ _('Nota:') }}</strong> {{ _('Los pagos extraordinarios permiten al empleado adelantar el pago de su préstamo. Debe indicar cómo desea aplicar este pago según la legislación laboral.') }}
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="{{ form.fecha_abono.id }}" class="form-label">
+                            {{ form.fecha_abono.label.text }} <span class="text-danger">*</span>
+                        </label>
+                        {{ form.fecha_abono(class="form-control" + (" is-invalid" if form.fecha_abono.errors else "")) }}
+                        {% if form.fecha_abono.errors %}
+                            <div class="invalid-feedback">{{ form.fecha_abono.errors[0] }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label for="{{ form.monto_abonado.id }}" class="form-label">
+                            {{ form.monto_abonado.label.text }} <span class="text-danger">*</span>
+                        </label>
+                        <div class="input-group">
+                            {% if prestamo.moneda %}
+                            <span class="input-group-text">{{ prestamo.moneda.simbolo or prestamo.moneda.codigo }}</span>
+                            {% endif %}
+                            {{ form.monto_abonado(class="form-control" + (" is-invalid" if form.monto_abonado.errors else "")) }}
+                            {% if form.monto_abonado.errors %}
+                                <div class="invalid-feedback">{{ form.monto_abonado.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                        {% if form.monto_abonado.description %}
+                            <div class="form-text">{{ form.monto_abonado.description }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-12">
+                        <label for="{{ form.tipo_aplicacion.id }}" class="form-label">
+                            {{ form.tipo_aplicacion.label.text }} <span class="text-danger">*</span>
+                        </label>
+                        {{ form.tipo_aplicacion(class="form-select" + (" is-invalid" if form.tipo_aplicacion.errors else "")) }}
+                        {% if form.tipo_aplicacion.errors %}
+                            <div class="invalid-feedback">{{ form.tipo_aplicacion.errors[0] }}</div>
+                        {% endif %}
+                        {% if form.tipo_aplicacion.description %}
+                            <div class="form-text">{{ form.tipo_aplicacion.description }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <hr class="my-4">
+                <h6 class="mb-3">{{ _('Documentación de Auditoría') }}</h6>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="{{ form.tipo_comprobante.id }}" class="form-label">
+                            {{ form.tipo_comprobante.label.text }} <span class="text-danger">*</span>
+                        </label>
+                        {{ form.tipo_comprobante(class="form-select" + (" is-invalid" if form.tipo_comprobante.errors else "")) }}
+                        {% if form.tipo_comprobante.errors %}
+                            <div class="invalid-feedback">{{ form.tipo_comprobante.errors[0] }}</div>
+                        {% endif %}
+                        {% if form.tipo_comprobante.description %}
+                            <div class="form-text">{{ form.tipo_comprobante.description }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label for="{{ form.numero_comprobante.id }}" class="form-label">
+                            {{ form.numero_comprobante.label.text }} <span class="text-danger">*</span>
+                        </label>
+                        {{ form.numero_comprobante(class="form-control" + (" is-invalid" if form.numero_comprobante.errors else "")) }}
+                        {% if form.numero_comprobante.errors %}
+                            <div class="invalid-feedback">{{ form.numero_comprobante.errors[0] }}</div>
+                        {% endif %}
+                        {% if form.numero_comprobante.description %}
+                            <div class="form-text">{{ form.numero_comprobante.description }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="{{ form.referencia_bancaria.id }}" class="form-label">
+                            {{ form.referencia_bancaria.label.text }}
+                        </label>
+                        {{ form.referencia_bancaria(class="form-control" + (" is-invalid" if form.referencia_bancaria.errors else "")) }}
+                        {% if form.referencia_bancaria.errors %}
+                            <div class="invalid-feedback">{{ form.referencia_bancaria.errors[0] }}</div>
+                        {% endif %}
+                        {% if form.referencia_bancaria.description %}
+                            <div class="form-text">{{ form.referencia_bancaria.description }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label for="{{ form.observaciones.id }}" class="form-label">
+                            {{ form.observaciones.label.text }}
+                        </label>
+                        {{ form.observaciones(class="form-control" + (" is-invalid" if form.observaciones.errors else "")) }}
+                        {% if form.observaciones.errors %}
+                            <div class="invalid-feedback">{{ form.observaciones.errors[0] }}</div>
+                        {% endif %}
+                        {% if form.observaciones.description %}
+                            <div class="form-text">{{ form.observaciones.description }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <hr class="my-4">
+                <h6 class="mb-3">{{ _('Información Contable (Opcional)') }}</h6>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="{{ form.cuenta_debe.id }}" class="form-label">
+                            {{ form.cuenta_debe.label.text }}
+                        </label>
+                        {{ form.cuenta_debe(class="form-control" + (" is-invalid" if form.cuenta_debe.errors else "")) }}
+                        {% if form.cuenta_debe.errors %}
+                            <div class="invalid-feedback">{{ form.cuenta_debe.errors[0] }}</div>
+                        {% endif %}
+                        {% if form.cuenta_debe.description %}
+                            <div class="form-text">{{ form.cuenta_debe.description }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label for="{{ form.cuenta_haber.id }}" class="form-label">
+                            {{ form.cuenta_haber.label.text }}
+                        </label>
+                        {{ form.cuenta_haber(class="form-control" + (" is-invalid" if form.cuenta_haber.errors else "")) }}
+                        {% if form.cuenta_haber.errors %}
+                            <div class="invalid-feedback">{{ form.cuenta_haber.errors[0] }}</div>
+                        {% endif %}
+                        {% if form.cuenta_haber.description %}
+                            <div class="form-text">{{ form.cuenta_haber.description }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end gap-2 mt-4">
+                    <a href="{{ url_for('prestamo.detail', prestamo_id=prestamo.id) }}" class="btn btn-secondary">
+                        {{ _('Cancelar') }}
+                    </a>
+                    {{ form.submit(class="btn btn-primary") }}
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

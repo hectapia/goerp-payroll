@@ -1,0 +1,252 @@
+{#-
+SPDX-License-Identifier: Apache-2.0
+SPDX-FileCopyrightText: 2025 - 2026 BMO Soluciones, S.A.
+-#}
+
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            <i class="bi bi-heart me-2"></i>
+            {{ _('Condonación de Deuda') }}
+        </h2>
+        <a href="{{ url_for('prestamo.detail', prestamo_id=prestamo.id) }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i>{{ _('Volver') }}
+        </a>
+    </div>
+
+    <!-- Warning Alert -->
+    <div class="alert alert-warning">
+        <i class="bi bi-exclamation-triangle me-2"></i>
+        <strong>{{ _('Advertencia:') }}</strong> {{ _('La condonación de deuda es una operación irreversible que reduce el saldo pendiente del préstamo sin que el empleado realice un pago. Esta acción requiere autorización gerencial y documentación completa para auditoría.') }}
+    </div>
+
+    <!-- Loan Summary -->
+    <div class="card mb-4">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0">{{ _('Información del Préstamo') }}</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4">
+                    <p><strong>{{ _('Empleado:') }}</strong> {{ prestamo.empleado.primer_nombre }} {{ prestamo.empleado.primer_apellido }}</p>
+                    <p><strong>{{ _('Código:') }}</strong> {{ prestamo.empleado.codigo_empleado }}</p>
+                    <p><strong>{{ _('Tipo:') }}</strong> 
+                        {% if prestamo.tipo == 'advance' %}
+                            {{ _('Adelanto de Salario') }}
+                        {% else %}
+                            {{ _('Préstamo') }}
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="col-md-4">
+                    <p><strong>{{ _('Monto Original:') }}</strong> 
+                        {% if prestamo.moneda %}
+                            {{ prestamo.moneda.simbolo or prestamo.moneda.codigo }}
+                        {% endif %}
+                        {{ "{:,.2f}".format(prestamo.monto_aprobado or prestamo.monto_solicitado) }}
+                    </p>
+                    <p><strong>{{ _('Saldo Pendiente Actual:') }}</strong> 
+                        <span class="text-danger fs-5">
+                            {% if prestamo.moneda %}
+                                {{ prestamo.moneda.simbolo or prestamo.moneda.codigo }}
+                            {% endif %}
+                            {{ "{:,.2f}".format(prestamo.saldo_pendiente) }}
+                        </span>
+                    </p>
+                </div>
+                <div class="col-md-4">
+                    <p><strong>{{ _('Cuotas Pactadas:') }}</strong> {{ prestamo.cuotas_pactadas }}</p>
+                    <p><strong>{{ _('Monto por Cuota:') }}</strong> 
+                        {% if prestamo.moneda %}
+                            {{ prestamo.moneda.simbolo or prestamo.moneda.codigo }}
+                        {% endif %}
+                        {{ "{:,.2f}".format(prestamo.monto_por_cuota or 0) }}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Forgiveness Form -->
+    <div class="card">
+        <div class="card-header bg-danger text-white">
+            <h5 class="mb-0">{{ _('Registro de Condonación') }}</h5>
+        </div>
+        <div class="card-body">
+            <form method="POST" novalidate>
+                {{ form.hidden_tag() }}
+                
+                <h6 class="mb-3">{{ _('Datos de la Condonación') }}</h6>
+
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <label for="{{ form.fecha_condonacion.id }}" class="form-label">
+                            {{ form.fecha_condonacion.label.text }} <span class="text-danger">*</span>
+                        </label>
+                        {{ form.fecha_condonacion(class="form-control" + (" is-invalid" if form.fecha_condonacion.errors else "")) }}
+                        {% if form.fecha_condonacion.errors %}
+                            <div class="invalid-feedback">{{ form.fecha_condonacion.errors[0] }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <label for="{{ form.monto_condonado.id }}" class="form-label">
+                            {{ form.monto_condonado.label.text }} <span class="text-danger">*</span>
+                        </label>
+                        <div class="input-group">
+                            {% if prestamo.moneda %}
+                            <span class="input-group-text">{{ prestamo.moneda.simbolo or prestamo.moneda.codigo }}</span>
+                            {% endif %}
+                            {{ form.monto_condonado(class="form-control" + (" is-invalid" if form.monto_condonado.errors else ""), id="monto_condonado") }}
+                            {% if form.monto_condonado.errors %}
+                                <div class="invalid-feedback">{{ form.monto_condonado.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                        {% if form.monto_condonado.description %}
+                            <div class="form-text">{{ form.monto_condonado.description }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <label for="{{ form.porcentaje_condonado.id }}" class="form-label">
+                            {{ form.porcentaje_condonado.label.text }}
+                        </label>
+                        <div class="input-group">
+                            {{ form.porcentaje_condonado(class="form-control" + (" is-invalid" if form.porcentaje_condonado.errors else ""), id="porcentaje_condonado", readonly=true) }}
+                            <span class="input-group-text">%</span>
+                            {% if form.porcentaje_condonado.errors %}
+                                <div class="invalid-feedback">{{ form.porcentaje_condonado.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+                        {% if form.porcentaje_condonado.description %}
+                            <div class="form-text">{{ form.porcentaje_condonado.description }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <hr class="my-4">
+                <h6 class="mb-3">{{ _('Autorización y Documentación') }}</h6>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="{{ form.autorizado_por.id }}" class="form-label">
+                            {{ form.autorizado_por.label.text }} <span class="text-danger">*</span>
+                        </label>
+                        {{ form.autorizado_por(class="form-control" + (" is-invalid" if form.autorizado_por.errors else ""), placeholder="Ej: Lic. Juan Pérez - Gerente de Finanzas") }}
+                        {% if form.autorizado_por.errors %}
+                            <div class="invalid-feedback">{{ form.autorizado_por.errors[0] }}</div>
+                        {% endif %}
+                        {% if form.autorizado_por.description %}
+                            <div class="form-text">{{ form.autorizado_por.description }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label for="{{ form.documento_soporte.id }}" class="form-label">
+                            {{ form.documento_soporte.label.text }} <span class="text-danger">*</span>
+                        </label>
+                        {{ form.documento_soporte(class="form-select" + (" is-invalid" if form.documento_soporte.errors else "")) }}
+                        {% if form.documento_soporte.errors %}
+                            <div class="invalid-feedback">{{ form.documento_soporte.errors[0] }}</div>
+                        {% endif %}
+                        {% if form.documento_soporte.description %}
+                            <div class="form-text">{{ form.documento_soporte.description }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-12">
+                        <label for="{{ form.referencia_documento.id }}" class="form-label">
+                            {{ form.referencia_documento.label.text }} <span class="text-danger">*</span>
+                        </label>
+                        {{ form.referencia_documento(class="form-control" + (" is-invalid" if form.referencia_documento.errors else ""), placeholder="Ej: Correo del 15/12/2024, Memorándum No. 045-2024, Acta de Junta No. 12") }}
+                        {% if form.referencia_documento.errors %}
+                            <div class="invalid-feedback">{{ form.referencia_documento.errors[0] }}</div>
+                        {% endif %}
+                        {% if form.referencia_documento.description %}
+                            <div class="form-text">{{ form.referencia_documento.description }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-12">
+                        <label for="{{ form.justificacion.id }}" class="form-label">
+                            {{ form.justificacion.label.text }} <span class="text-danger">*</span>
+                        </label>
+                        {% set placeholder_text = "Ej: Según correo electrónico recibido en fecha 15/12/2024, el Gerente de Finanzas ha autorizado descontar el 25% del saldo del préstamo " ~ prestamo.id[:8] ~ " al empleado " ~ prestamo.empleado.primer_nombre ~ " " ~ prestamo.empleado.primer_apellido ~ " debido a [razón específica]. Se adjunta correo electrónico como evidencia de la autorización." %}
+                        {{ form.justificacion(class="form-control" + (" is-invalid" if form.justificacion.errors else ""), rows=5, placeholder=placeholder_text) }}
+                        {% if form.justificacion.errors %}
+                            <div class="invalid-feedback">{{ form.justificacion.errors[0] }}</div>
+                        {% endif %}
+                        {% if form.justificacion.description %}
+                            <div class="form-text">{{ form.justificacion.description }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <hr class="my-4">
+                <h6 class="mb-3">{{ _('Información Contable (Opcional)') }}</h6>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="{{ form.cuenta_debe.id }}" class="form-label">
+                            {{ form.cuenta_debe.label.text }}
+                        </label>
+                        {{ form.cuenta_debe(class="form-control" + (" is-invalid" if form.cuenta_debe.errors else "")) }}
+                        {% if form.cuenta_debe.errors %}
+                            <div class="invalid-feedback">{{ form.cuenta_debe.errors[0] }}</div>
+                        {% endif %}
+                        {% if form.cuenta_debe.description %}
+                            <div class="form-text">{{ form.cuenta_debe.description }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label for="{{ form.cuenta_haber.id }}" class="form-label">
+                            {{ form.cuenta_haber.label.text }}
+                        </label>
+                        {{ form.cuenta_haber(class="form-control" + (" is-invalid" if form.cuenta_haber.errors else "")) }}
+                        {% if form.cuenta_haber.errors %}
+                            <div class="invalid-feedback">{{ form.cuenta_haber.errors[0] }}</div>
+                        {% endif %}
+                        {% if form.cuenta_haber.description %}
+                            <div class="form-text">{{ form.cuenta_haber.description }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="alert alert-danger mt-4">
+                    <i class="bi bi-shield-exclamation me-2"></i>
+                    <strong>{{ _('Importante:') }}</strong> {{ _('Esta información quedará registrada permanentemente en el sistema para fines de auditoría. Asegúrese de que toda la documentación esté completa y correcta.') }}
+                </div>
+
+                <div class="d-flex justify-content-end gap-2 mt-4">
+                    <a href="{{ url_for('prestamo.detail', prestamo_id=prestamo.id) }}" class="btn btn-secondary">
+                        {{ _('Cancelar') }}
+                    </a>
+                    {{ form.submit(class="btn btn-danger", onclick="return confirm('" + _('¿Está seguro de condonar esta deuda? Esta acción no se puede deshacer.') + "');") }}
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Auto-calculate percentage when amount changes
+    document.getElementById('monto_condonado').addEventListener('input', function() {
+        const monto = parseFloat(this.value) || 0;
+        const saldo = {{ prestamo.saldo_pendiente }};
+        const porcentaje = saldo > 0 ? ((monto / saldo) * 100).toFixed(2) : 0;
+        document.getElementById('porcentaje_condonado').value = porcentaje;
+    });
+    
+    // Trigger calculation on page load
+    document.getElementById('monto_condonado').dispatchEvent(new Event('input'));
+</script>
+{% endblock %}

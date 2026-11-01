@@ -1,0 +1,155 @@
+{#-
+SPDX-License-Identifier: Apache-2.0
+SPDX-FileCopyrightText: 2025 - 2026 BMO Soluciones, S.A.
+-#}
+
+{% extends "base.html" %}
+{% block title %}{{ _('Carga Masiva de Saldos Iniciales de Vacaciones') }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-10 offset-md-1">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-file-earmark-excel"></i> {{ _('Carga Masiva de Saldos Iniciales desde Excel') }}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        <strong>{{ _('Uso:') }}</strong> 
+                        {{ _('Use esta función para cargar los saldos iniciales de vacaciones de múltiples empleados desde un archivo Excel durante la implementación del sistema.') }}
+                    </div>
+                    
+                    <div class="card mb-4">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0">{{ _('Formato del Archivo Excel') }}</h5>
+                        </div>
+                        <div class="card-body">
+                            <p>{{ _('El archivo Excel debe tener las siguientes columnas (sin encabezados):') }}</p>
+                            <table class="table table-bordered table-sm">
+                                <thead class="thead-light">
+                                    <tr>
+                                        <th>{{ _('Columna') }}</th>
+                                        <th>{{ _('Campo') }}</th>
+                                        <th>{{ _('Tipo') }}</th>
+                                        <th>{{ _('Requerido') }}</th>
+                                        <th>{{ _('Ejemplo') }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><strong>A</strong></td>
+                                        <td>{{ _('Código de Empleado') }}</td>
+                                        <td>{{ _('Texto') }}</td>
+                                        <td><span class="badge badge-danger">{{ _('Sí') }}</span></td>
+                                        <td>EMP001</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>B</strong></td>
+                                        <td>{{ _('Saldo Inicial') }}</td>
+                                        <td>{{ _('Número') }}</td>
+                                        <td><span class="badge badge-danger">{{ _('Sí') }}</span></td>
+                                        <td>15.5</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>C</strong></td>
+                                        <td>{{ _('Fecha de Corte') }}</td>
+                                        <td>{{ _('Fecha (DD/MM/YYYY)') }}</td>
+                                        <td><span class="badge badge-danger">{{ _('Sí') }}</span></td>
+                                        <td>31/12/2024</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>D</strong></td>
+                                        <td>{{ _('Observaciones') }}</td>
+                                        <td>{{ _('Texto') }}</td>
+                                        <td><span class="badge badge-secondary">{{ _('No') }}</span></td>
+                                        <td>{{ _('Saldo al inicio del sistema') }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            
+                            <div class="alert alert-warning mt-3">
+                                <strong>{{ _('Requisitos:') }}</strong>
+                                <ul class="mb-0">
+                                    <li>{{ _('Los empleados deben existir en el sistema y estar activos.') }}</li>
+                                    <li>{{ _('Cada empleado debe tener una cuenta de vacaciones activa creada previamente.') }}</li>
+                                    <li>{{ _('Las cuentas de vacaciones no deben tener movimientos previos.') }}</li>
+                                    <li><strong>{{ _('IMPORTANTE: El archivo Excel NO debe tener encabezados. Los datos comienzan en la fila 1.') }}</strong></li>
+                                </ul>
+                            </div>
+                            
+                            <div class="alert alert-success">
+                                <strong>{{ _('Ejemplo de archivo Excel:') }}</strong>
+                                <table class="table table-sm table-bordered mt-2 bg-white">
+                                    <tbody>
+                                        <tr>
+                                            <td>EMP001</td>
+                                            <td>15.5</td>
+                                            <td>31/12/2024</td>
+                                            <td>{{ _('Saldo inicial 2024') }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>EMP002</td>
+                                            <td>20.0</td>
+                                            <td>31/12/2024</td>
+                                            <td>{{ _('Vacaciones acumuladas') }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td>EMP003</td>
+                                            <td>8.75</td>
+                                            <td>31/12/2024</td>
+                                            <td></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0">{{ _('Subir Archivo') }}</h5>
+                        </div>
+                        <div class="card-body">
+                            <form method="POST" enctype="multipart/form-data">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <div class="form-group">
+                                    <label for="file" class="form-label required">{{ _('Archivo Excel') }}</label>
+                                    <input type="file" 
+                                           class="form-control" 
+                                           id="file" 
+                                           name="file" 
+                                           accept=".xlsx,.xls"
+                                           required>
+                                    <small class="form-text text-muted">
+                                        {{ _('Formatos aceptados: .xlsx, .xls') }}
+                                    </small>
+                                </div>
+                                
+                                <div class="form-group mt-4">
+                                    <button type="submit" class="btn btn-primary btn-lg">
+                                        <i class="bi bi-upload"></i> {{ _('Cargar Saldos Iniciales') }}
+                                    </button>
+                                    <a href="{{ url_for('vacation.dashboard') }}" class="btn btn-secondary">
+                                        {{ _('Cancelar') }}
+                                    </a>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-primary mt-4">
+                        <i class="bi bi-lightbulb"></i>
+                        <strong>{{ _('Consejo:') }}</strong> 
+                        {{ _('Para cargar un solo empleado o hacer correcciones, use el') }} 
+                        <a href="{{ url_for('vacation.initial_balance_form') }}">{{ _('formulario individual') }}</a>.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

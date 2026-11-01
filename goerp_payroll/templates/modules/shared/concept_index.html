@@ -1,0 +1,156 @@
+{#-
+SPDX-License-Identifier: Apache-2.0
+SPDX-FileCopyrightText: 2025 - 2026 BMO Soluciones, S.A.
+-#}
+
+{% extends "base.html" %}
+{% from 'macros.html' import render_field %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="mb-0">
+                    <i class="bi {{ config.icon }} me-2"></i>
+                    {{ config.plural }}
+                </h2>
+                <a href="{{ url_for(config.blueprint + '.' + config.route_prefix + 'new') }}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle me-1"></i> {{ _('Nueva %(type)s', type=config.singular) }}
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    {% if items %}
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>{{ _('Código') }}</th>
+                                    <th>{{ _('Nombre') }}</th>
+                                    <th>{{ _('Tipo Cálculo') }}</th>
+                                    <th class="text-center">{{ _('Recurrente') }}</th>
+                                    <th class="text-center">{{ _('Estado') }}</th>
+                                    <th class="text-end">{{ _('Acciones') }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in items %}
+                                <tr>
+                                    <td>
+                                        <code>{{ item.codigo }}</code>
+                                    </td>
+                                    <td>
+                                        <strong>{{ item.nombre }}</strong>
+                                        {% if item.descripcion %}
+                                        <br><small class="text-muted">{{ item.descripcion }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">{{ item.formula_tipo }}</span>
+                                        {% if item.porcentaje %}
+                                        <span class="text-muted ms-1">{{ item.porcentaje }}%</span>
+                                        {% elif item.monto_default %}
+                                        <span class="text-muted ms-1">{{ item.monto_default }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        {% if item.recurrente %}
+                                        <i class="bi bi-check-circle-fill text-success"></i>
+                                        {% else %}
+                                        <i class="bi bi-dash text-muted"></i>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        {% if item.activo %}
+                                        <span class="badge bg-success">{{ _('Activo') }}</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">{{ _('Inactivo') }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end">
+                                        <a href="{{ url_for(config.blueprint + '.' + config.route_prefix + 'edit', concept_id=item.id) }}"
+                                            class="btn btn-sm btn-outline-primary" title="{{ _('Editar') }}">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <form
+                                            action="{{ url_for(config.blueprint + '.' + config.route_prefix + 'delete', concept_id=item.id) }}"
+                                            method="post" class="d-inline"
+                                            onsubmit="return confirm('{{ _('¿Está seguro de eliminar esta %(type)s?', type=config.singular) }}');">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger"
+                                                title="{{ _('Eliminar') }}">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    {% if pagination.pages > 1 %}
+                    <nav aria-label="Page navigation" class="mt-4">
+                        <ul class="pagination justify-content-center mb-0">
+                            {% if pagination.has_prev %}
+                            <li class="page-item">
+                                <a class="page-link"
+                                    href="{{ url_for(config.blueprint + '.' + config.route_prefix + 'index', page=pagination.prev_num) }}">
+                                    <i class="bi bi-chevron-left"></i>
+                                </a>
+                            </li>
+                            {% endif %}
+
+                            {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                            {% if page_num %}
+                            {% if page_num == pagination.page %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ page_num }}</span>
+                            </li>
+                            {% else %}
+                            <li class="page-item">
+                                <a class="page-link"
+                                    href="{{ url_for(config.blueprint + '.' + config.route_prefix + 'index', page=page_num) }}">{{ page_num }}</a>
+                            </li>
+                            {% endif %}
+                            {% else %}
+                            <li class="page-item disabled"><span class="page-link">...</span></li>
+                            {% endif %}
+                            {% endfor %}
+
+                            {% if pagination.has_next %}
+                            <li class="page-item">
+                                <a class="page-link"
+                                    href="{{ url_for(config.blueprint + '.' + config.route_prefix + 'index', page=pagination.next_num) }}">
+                                    <i class="bi bi-chevron-right"></i>
+                                </a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
+
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="bi {{ config.icon }} display-1 text-muted"></i>
+                        <h4 class="mt-3">{{ _('No hay %(type)s registradas', type=config.plural|lower) }}</h4>
+                        <p class="text-muted">{{ _('Comience creando una nueva %(type)s', type=config.singular|lower) }}
+                        </p>
+                        <a href="{{ url_for(config.blueprint + '.' + config.route_prefix + 'new') }}"
+                            class="btn btn-primary">
+                            <i class="bi bi-plus-circle me-1"></i> {{ _('Nueva %(type)s', type=config.singular) }}
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,102 @@
+{#-
+SPDX-License-Identifier: Apache-2.0
+SPDX-FileCopyrightText: 2025 - 2026 BMO Soluciones, S.A.
+-#}
+
+{% extends 'base.html' %}
+{% from 'macros.html' import render_pagination %}
+
+{% block content %}
+<div class="container">
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>{{ _('Solicitudes de Vacaciones') }}</h2>
+        <a href="{{ url_for('vacation.leave_request_new') }}" class="btn btn-primary">
+            <i class="bi bi-plus-circle me-1"></i>{{ _('Nueva Solicitud') }}
+        </a>
+    </div>
+
+    <!-- Filter Tabs -->
+    <ul class="nav nav-tabs mb-3">
+        <li class="nav-item">
+            <a class="nav-link {% if not estado %}active{% endif %}" 
+               href="{{ url_for('vacation.leave_request_index') }}">
+                {{ _('Todas') }}
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if estado == 'pending' %}active{% endif %}" 
+               href="{{ url_for('vacation.leave_request_index', estado='pending') }}">
+                {{ _('Pendientes') }}
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if estado == 'approved' %}active{% endif %}" 
+               href="{{ url_for('vacation.leave_request_index', estado='approved') }}">
+                {{ _('Aprobadas') }}
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if estado == 'rejected' %}active{% endif %}" 
+               href="{{ url_for('vacation.leave_request_index', estado='rejected') }}">
+                {{ _('Rechazadas') }}
+            </a>
+        </li>
+    </ul>
+
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>{{ _('Empleado') }}</th>
+                            <th>{{ _('Código') }}</th>
+                            <th>{{ _('Fecha Inicio') }}</th>
+                            <th>{{ _('Fecha Fin') }}</th>
+                            <th>{{ _('Unidades') }}</th>
+                            <th>{{ _('Estado') }}</th>
+                            <th>{{ _('Fecha Solicitud') }}</th>
+                            <th>{{ _('Acciones') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for request in leave_requests %}
+                        <tr>
+                            <td>{{ request.empleado.primer_nombre }} {{ request.empleado.primer_apellido }}</td>
+                            <td><strong>{{ request.empleado.codigo_empleado }}</strong></td>
+                            <td>{{ request.start_date.strftime('%Y-%m-%d') }}</td>
+                            <td>{{ request.end_date.strftime('%Y-%m-%d') }}</td>
+                            <td>{{ request.units }}</td>
+                            <td>
+                                {% if request.estado == 'pending' %}
+                                    <span class="badge bg-warning">{{ _('Pendiente') }}</span>
+                                {% elif request.estado == 'approved' %}
+                                    <span class="badge bg-success">{{ _('Aprobado') }}</span>
+                                {% elif request.estado == 'rejected' %}
+                                    <span class="badge bg-danger">{{ _('Rechazado') }}</span>
+                                {% elif request.estado == 'taken' %}
+                                    <span class="badge bg-info">{{ _('Disfrutado') }}</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ request.creado.strftime('%Y-%m-%d') }}</td>
+                            <td>
+                                <a href="{{ url_for('vacation.leave_request_detail', request_id=request.id) }}" 
+                                   class="btn btn-sm btn-outline-info" title="{{ _('Ver Detalles') }}">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="8" class="text-center text-muted">{{ _('No hay solicitudes registradas.') }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {{ render_pagination(pagination, 'vacation.leave_request_index') }}
+        </div>
+    </div>
+</div>
+{% endblock %}

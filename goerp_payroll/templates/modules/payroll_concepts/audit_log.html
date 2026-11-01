@@ -1,0 +1,151 @@
+{#-
+SPDX-License-Identifier: Apache-2.0
+SPDX-FileCopyrightText: 2025 - 2026 BMO Soluciones, S.A.
+-#}
+
+{% extends "base.html" %}
+{% block title %}{{ _('Historial de Auditoría') }} - {{ concept.nombre }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}">{{ _('Inicio') }}</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for(config['blueprint'] + '.' + config['route_prefix'] + 'index') }}">{{ config['plural'] }}</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">{{ _('Historial de Auditoría') }}</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-clock-history"></i>
+                        {{ _('Historial de Auditoría') }}: {{ concept.nombre }}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <p><strong>{{ _('Código') }}:</strong> {{ concept.codigo }}</p>
+                            <p><strong>{{ _('Tipo') }}:</strong> {{ config['singular'] }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p>
+                                <strong>{{ _('Estado Actual') }}:</strong>
+                                {% if concept.estado_aprobacion == 'approved' %}
+                                    <span class="badge bg-success">{{ _('Aprobado') }}</span>
+                                {% else %}
+                                    <span class="badge bg-warning text-dark">{{ _('Borrador') }}</span>
+                                {% endif %}
+                            </p>
+                            {% if concept.aprobado_por %}
+                            <p><strong>{{ _('Aprobado por') }}:</strong> {{ concept.aprobado_por }}</p>
+                            <p><strong>{{ _('Fecha de aprobación') }}:</strong> {{ concept.aprobado_en.strftime('%Y-%m-%d %H:%M:%S') if concept.aprobado_en else '-' }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <h5 class="mb-3">{{ _('Registro de Cambios') }}</h5>
+
+                    {% if audit_logs %}
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 15%;">{{ _('Fecha/Hora') }}</th>
+                                    <th style="width: 12%;">{{ _('Usuario') }}</th>
+                                    <th style="width: 12%;">{{ _('Acción') }}</th>
+                                    <th style="width: 15%;">{{ _('Estado') }}</th>
+                                    <th style="width: 46%;">{{ _('Descripción') }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for log in audit_logs %}
+                                <tr>
+                                    <td>{{ log.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                                    <td>{{ log.usuario }}</td>
+                                    <td>
+                                        {% if log.accion == 'created' %}
+                                            <span class="badge bg-info">{{ _('Creado') }}</span>
+                                        {% elif log.accion == 'updated' %}
+                                            <span class="badge bg-primary">{{ _('Actualizado') }}</span>
+                                        {% elif log.accion == 'approved' %}
+                                            <span class="badge bg-success">{{ _('Aprobado') }}</span>
+                                        {% elif log.accion == 'rejected' %}
+                                            <span class="badge bg-danger">{{ _('Rechazado') }}</span>
+                                        {% elif log.accion == 'migrated' %}
+                                            <span class="badge bg-secondary">{{ _('Migrado') }}</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">{{ log.accion }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if log.estado_anterior and log.estado_nuevo %}
+                                            <span class="badge bg-secondary">{{ log.estado_anterior }}</span>
+                                            <i class="bi bi-arrow-right"></i>
+                                            {% if log.estado_nuevo == 'approved' %}
+                                                <span class="badge bg-success">{{ log.estado_nuevo }}</span>
+                                            {% else %}
+                                                <span class="badge bg-warning text-dark">{{ log.estado_nuevo }}</span>
+                                            {% endif %}
+                                        {% elif log.estado_nuevo %}
+                                            {% if log.estado_nuevo == 'approved' %}
+                                                <span class="badge bg-success">{{ log.estado_nuevo }}</span>
+                                            {% else %}
+                                                <span class="badge bg-warning text-dark">{{ log.estado_nuevo }}</span>
+                                            {% endif %}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {{ log.descripcion or '-' }}
+                                        {% if log.cambios %}
+                                        <button class="btn btn-sm btn-outline-secondary" type="button" 
+                                                data-bs-toggle="collapse" 
+                                                data-bs-target="#cambios-{{ log.id }}" 
+                                                aria-expanded="false">
+                                            <i class="bi bi-chevron-down"></i> {{ _('Ver detalles') }}
+                                        </button>
+                                        <div class="collapse mt-2" id="cambios-{{ log.id }}">
+                                            <div class="card card-body bg-light">
+                                                <small>
+                                                    <strong>{{ _('Cambios detallados') }}:</strong>
+                                                    <pre class="mb-0">{{ log.cambios | tojson(indent=2) }}</pre>
+                                                </small>
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        {{ _('No hay registros de auditoría para este concepto.') }}
+                    </div>
+                    {% endif %}
+
+                    <div class="mt-4">
+                        <a href="{{ url_for(config['blueprint'] + '.' + config['route_prefix'] + 'index') }}" 
+                           class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> {{ _('Volver') }}
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

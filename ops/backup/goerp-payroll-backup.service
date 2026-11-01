@@ -1,0 +1,7 @@
+[Unit]
+Description=GoERP Payroll database backup
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/goerp-payroll/backup.env
+ExecStart=/usr/local/lib/goerp-payroll/goerp-payroll-backup.sh

@@ -1,0 +1,297 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: 2025 - 2026 BMO Soluciones, S.A.
+"""Main routes for planilla management."""
+
+from flask import flash, redirect, render_template, request, url_for
+from flask_login import current_user
+from sqlalchemy import false, true
+
+from goerp_payroll.audit_helpers import aprobar_planilla, marcar_planilla_como_borrador_si_editada, rechazar_planilla
+from goerp_payroll.enums import TipoUsuario
+from goerp_payroll.model import db, Planilla, VacationPolicy
+from goerp_payroll.forms import PlanillaForm
+from goerp_payroll.i18n import _
+from goerp_payroll.rbac import require_read_access, require_role, require_write_access
+from goerp_payroll.vistas.planilla.helpers import (
+    populate_form_choices,
+    get_planilla_component_counts,
+    get_nomina_counts_by_planilla,
+)
+from goerp_payroll.vistas.planilla.services import PlanillaService
+from goerp_payroll.vistas.constants import TEMPLATE_PLANILLA_FORM
+from goerp_payroll.tenant import accessible_empresas, scoped_or_404, scope_company_query
+
+# Import blueprint from __init__.py
+from goerp_payroll.vistas.planilla import planilla_bp
+
+
+@planilla_bp.route("/", methods=["GET"])
+@require_read_access()
+def index():
+    """List all planillas with pagination and filters."""
+    from goerp_payroll.model import TipoPlanilla
+    from goerp_payroll.vistas.constants import PER_PAGE
+
+    page = request.args.get("page", 1, type=int)
+
+    # Get filter parameters
+    buscar = request.args.get("buscar", type=str)
+    estado = request.args.get("estado", type=str)
+    tipo_planilla_id = request.args.get("tipo_planilla_id", type=str) if request.args.get("tipo_planilla_id") else None
+    empresa_id = request.args.get("empresa_id", type=str) if request.args.get("empresa_id") else None
+
+    # Build query with filters
+    query = scope_company_query(db.select(Planilla), Planilla.empresa_id)
+
+    if buscar:
+        search_term = f"%{buscar}%"
+        query = query.filter(
+            db.or_(
+                Planilla.nombre.ilike(search_term),
+                Planilla.descripcion.ilike(search_term),
+            )
+        )
+
+    if estado == "activo":
+        query = query.filter(Planilla.activo.is_(true()))
+    elif estado == "inactivo":
+        query = query.filter(Planilla.activo.is_(false()))
+
+    if tipo_planilla_id:
+        query = query.filter(Planilla.tipo_planilla_id == tipo_planilla_id)
+
+    if empresa_id:
+        query = query.filter(Planilla.empresa_id == empresa_id)
+
+    query = query.order_by(Planilla.nombre)
+
+    pagination = db.paginate(
+        query,
+        page=page,
+        per_page=PER_PAGE,
+        error_out=False,
+    )
+
+    # Get choices for filter dropdowns
+    tipos_planilla = (
+        db.session.execute(db.select(TipoPlanilla).filter_by(activo=True).order_by(TipoPlanilla.codigo)).scalars().all()
+    )
+    empresas = accessible_empresas()
+    nomina_counts = get_nomina_counts_by_planilla([planilla.id for planilla in pagination.items])
+
+    return render_template(
+        "modules/planilla/index.html",
+        planillas=pagination.items,
+        pagination=pagination,
+        buscar=buscar,
+        estado=estado,
+        tipo_planilla_id=tipo_planilla_id,
+        empresa_id=empresa_id,
+        tipos_planilla=tipos_planilla,
+        empresas=empresas,
+        nomina_counts=nomina_counts,
+    )
+
+
+@planilla_bp.route("/new", methods=["GET", "POST"])
+@require_write_access()
+def new():
+    """Create a new planilla. Admin and HR can create planillas."""
+    form = PlanillaForm()
+    populate_form_choices(form)
+
+    if form.validate_on_submit():
+        from goerp_payroll.tenant import require_company_access
+
+        require_company_access(form.empresa_id.data)
+        vacation_policy_id, policy_error = _validate_vacation_policy(form)
+        if policy_error:
+            flash(_(policy_error), "danger")
+            return render_template(TEMPLATE_PLANILLA_FORM, form=form, is_edit=False)
+
+        planilla = Planilla(
+            nombre=form.nombre.data,
+            descripcion=form.descripcion.data,
+            tipo_planilla_id=form.tipo_planilla_id.data,
+            moneda_id=form.moneda_id.data,
+            empresa_id=form.empresa_id.data or None,
+            mes_inicio_fiscal=form.mes_inicio_fiscal.data or 1,
+            vacation_policy_id=vacation_policy_id,
+            periodo_fiscal_inicio=form.periodo_fiscal_inicio.data,
+            periodo_fiscal_fin=form.periodo_fiscal_fin.data,
+            prioridad_prestamos=form.prioridad_prestamos.data or 250,
+            prioridad_adelantos=form.prioridad_adelantos.data or 251,
+            aplicar_prestamos_automatico=form.aplicar_prestamos_automatico.data,
+            aplicar_adelantos_automatico=form.aplicar_adelantos_automatico.data,
+            codigo_cuenta_debe_salario=form.codigo_cuenta_debe_salario.data,
+            descripcion_cuenta_debe_salario=form.descripcion_cuenta_debe_salario.data,
+            codigo_cuenta_haber_salario=form.codigo_cuenta_haber_salario.data,
+            descripcion_cuenta_haber_salario=form.descripcion_cuenta_haber_salario.data,
+            activo=form.activo.data,
+            creado_por=current_user.usuario,
+        )
+        db.session.add(planilla)
+        db.session.commit()
+        flash(_("Planilla creada exitosamente."), "success")
+        return redirect(url_for("planilla.edit", planilla_id=planilla.id))
+
+    return render_template(TEMPLATE_PLANILLA_FORM, form=form, is_edit=False)
+
+
+def _validate_vacation_policy(form) -> tuple[str | None, str | None]:
+    """Validate that a selected vacation policy belongs to the form company."""
+    vacation_policy_id = form.vacation_policy_id.data or None
+    if not vacation_policy_id:
+        return None, None
+    policy = db.session.get(VacationPolicy, vacation_policy_id)
+    if not policy:
+        return vacation_policy_id, "La regla de vacaciones seleccionada no existe."
+    if policy.empresa_id and policy.empresa_id != (form.empresa_id.data or None):
+        return vacation_policy_id, "La regla de vacaciones pertenece a otra empresa."
+    return vacation_policy_id, None
+
+
+@planilla_bp.route("/<planilla_id>/edit", methods=["GET", "POST"])
+@require_write_access()
+def edit(planilla_id: str):
+    """Edit basic planilla configuration."""
+    planilla = scoped_or_404(Planilla, planilla_id, Planilla.empresa_id)
+    form = PlanillaForm(obj=planilla)
+    populate_form_choices(form)
+
+    if form.validate_on_submit():
+        vacation_policy_id, policy_error = _validate_vacation_policy(form)
+        if policy_error:
+            flash(_(policy_error), "danger")
+            counts = get_planilla_component_counts(planilla_id)
+            return render_template(TEMPLATE_PLANILLA_FORM, form=form, planilla=planilla, is_edit=True, **counts)
+
+        campos_editables = (
+            "nombre",
+            "descripcion",
+            "tipo_planilla_id",
+            "moneda_id",
+            "empresa_id",
+            "mes_inicio_fiscal",
+            "vacation_policy_id",
+            "periodo_fiscal_inicio",
+            "periodo_fiscal_fin",
+            "prioridad_prestamos",
+            "prioridad_adelantos",
+            "aplicar_prestamos_automatico",
+            "aplicar_adelantos_automatico",
+            "codigo_cuenta_debe_salario",
+            "descripcion_cuenta_debe_salario",
+            "codigo_cuenta_haber_salario",
+            "descripcion_cuenta_haber_salario",
+            "activo",
+        )
+        valores_anteriores = {campo: getattr(planilla, campo) for campo in campos_editables}
+
+        planilla.nombre = form.nombre.data
+        planilla.descripcion = form.descripcion.data
+        planilla.tipo_planilla_id = form.tipo_planilla_id.data
+        planilla.moneda_id = form.moneda_id.data
+        planilla.empresa_id = form.empresa_id.data or None
+        planilla.mes_inicio_fiscal = form.mes_inicio_fiscal.data or 1
+        planilla.vacation_policy_id = vacation_policy_id
+        planilla.periodo_fiscal_inicio = form.periodo_fiscal_inicio.data
+        planilla.periodo_fiscal_fin = form.periodo_fiscal_fin.data
+        planilla.prioridad_prestamos = form.prioridad_prestamos.data or 250
+        planilla.prioridad_adelantos = form.prioridad_adelantos.data or 251
+        planilla.aplicar_prestamos_automatico = form.aplicar_prestamos_automatico.data
+        planilla.aplicar_adelantos_automatico = form.aplicar_adelantos_automatico.data
+        planilla.codigo_cuenta_debe_salario = form.codigo_cuenta_debe_salario.data
+        planilla.descripcion_cuenta_debe_salario = form.descripcion_cuenta_debe_salario.data
+        planilla.codigo_cuenta_haber_salario = form.codigo_cuenta_haber_salario.data
+        planilla.descripcion_cuenta_haber_salario = form.descripcion_cuenta_haber_salario.data
+        planilla.activo = form.activo.data
+        planilla.modificado_por = current_user.usuario
+        cambios = {
+            campo: {"anterior": str(anterior), "nuevo": str(getattr(planilla, campo))}
+            for campo, anterior in valores_anteriores.items()
+            if anterior != getattr(planilla, campo)
+        }
+        if cambios:
+            marcar_planilla_como_borrador_si_editada(planilla, current_user.usuario, cambios)
+        db.session.commit()
+        flash(_("Planilla actualizada exitosamente."), "success")
+        return redirect(url_for("planilla.config", planilla_id=planilla.id))
+
+    # Get association counts for the summary
+    counts = get_planilla_component_counts(planilla_id)
+
+    return render_template(
+        TEMPLATE_PLANILLA_FORM,
+        form=form,
+        planilla=planilla,
+        is_edit=True,
+        **counts,
+    )
+
+
+@planilla_bp.route("/<planilla_id>/approve", methods=["POST"])
+@require_role(TipoUsuario.ADMIN, TipoUsuario.HHRR)
+def approve(planilla_id: str):
+    """Approve a payroll template and preserve its audit trail."""
+    planilla = scoped_or_404(Planilla, planilla_id, Planilla.empresa_id)
+    if aprobar_planilla(planilla, current_user.usuario):
+        db.session.commit()
+        flash(_("Planilla aprobada exitosamente."), "success")
+    else:
+        flash(_("La planilla ya está aprobada."), "info")
+    return redirect(url_for("planilla.config", planilla_id=planilla.id))
+
+
+@planilla_bp.route("/<planilla_id>/reject", methods=["POST"])
+@require_role(TipoUsuario.ADMIN, TipoUsuario.HHRR)
+def reject(planilla_id: str):
+    """Return a payroll template to draft status with an audit entry."""
+    planilla = scoped_or_404(Planilla, planilla_id, Planilla.empresa_id)
+    rechazar_planilla(planilla, current_user.usuario, request.form.get("razon") or None)
+    db.session.commit()
+    flash(_("Planilla marcada como borrador."), "warning")
+    return redirect(url_for("planilla.config", planilla_id=planilla.id))
+
+
+@planilla_bp.route("/<planilla_id>/config", methods=["GET"])
+@require_read_access()
+def config(planilla_id: str):
+    """Configuration overview page for a planilla."""
+    planilla = scoped_or_404(Planilla, planilla_id, Planilla.empresa_id)
+
+    # Get association counts for the summary
+    counts = get_planilla_component_counts(planilla_id)
+
+    return render_template(
+        "modules/planilla/config.html",
+        planilla=planilla,
+        **counts,
+    )
+
+
+@planilla_bp.route("/<planilla_id>/clone", methods=["POST"])
+@require_write_access()
+def clone(planilla_id: str):
+    """Clone a planilla and redirect to edit the new copy."""
+    planilla = scoped_or_404(Planilla, planilla_id, Planilla.empresa_id)
+    nueva_planilla = PlanillaService.clone_planilla(planilla, creado_por=current_user.usuario)
+    flash(_("Planilla clonada exitosamente: %(nombre)s", nombre=nueva_planilla.nombre), "success")
+    return redirect(url_for("planilla.edit", planilla_id=nueva_planilla.id))
+
+
+@planilla_bp.route("/<planilla_id>/delete", methods=["POST"])
+@require_write_access()
+def delete(planilla_id: str):
+    """Delete a planilla."""
+    planilla = scoped_or_404(Planilla, planilla_id, Planilla.empresa_id)
+
+    can_delete, error_message = PlanillaService.can_delete(planilla)
+    if not can_delete:
+        flash(_(error_message or "No se puede eliminar la planilla."), "error")
+        return redirect(url_for("planilla.index"))
+
+    db.session.delete(planilla)
+    db.session.commit()
+    flash(_("Planilla eliminada exitosamente."), "success")
+    return redirect(url_for("planilla.index"))

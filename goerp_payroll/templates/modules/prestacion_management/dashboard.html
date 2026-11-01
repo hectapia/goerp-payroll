@@ -1,0 +1,153 @@
+{#-
+SPDX-License-Identifier: Apache-2.0
+SPDX-FileCopyrightText: 2025 - 2026 BMO Soluciones, S.A.
+-#}
+
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    
+    <div class="mb-4">
+        <h2><i class="bi bi-gift me-2"></i>{{ _('Gestión de Prestaciones') }}</h2>
+        <p class="text-muted">{{ _('Gestión y control de prestaciones') }}</p>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">{{ _('Prestaciones Activas') }}</h5>
+                    <p class="display-4">{{ total_prestaciones }}</p>
+                    <a href="{{ url_for('prestacion.prestacion_index') }}" class="btn btn-sm btn-primary">
+                        {{ _('Ver Prestaciones') }}
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">{{ _('Empleados con Saldo') }}</h5>
+                    <p class="display-4">{{ total_accounts }}</p>
+                    <a href="{{ url_for('carga_inicial_prestacion.reporte') }}" class="btn btn-sm btn-primary">
+                        {{ _('Ver Reporte') }}
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">{{ _('Cargas Pendientes') }}</h5>
+                    <p class="display-4">{{ pending_loads }}</p>
+                    <a href="{{ url_for('carga_inicial_prestacion.index', estado='draft') }}" class="btn btn-sm btn-primary">
+                        {{ _('Ver Pendientes') }}
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h4>{{ _('Acciones Rápidas') }}</h4>
+            <div class="btn-group" role="group">
+                <a href="{{ url_for('prestacion.prestacion_new') }}" class="btn btn-outline-primary">
+                    <i class="bi bi-plus-circle me-1"></i>{{ _('Nueva Prestación') }}
+                </a>
+                <a href="{{ url_for('carga_inicial_prestacion.nueva') }}" class="btn btn-outline-primary">
+                    <i class="bi bi-plus-circle me-1"></i>{{ _('Carga Individual') }}
+                </a>
+                <a href="{{ url_for('carga_inicial_prestacion.reporte') }}" class="btn btn-success">
+                    <i class="bi bi-file-earmark-text me-1"></i>{{ _('Ver Reporte de Acumulados') }}
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Initial Balance Loading (Implementation Phase) -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-info">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-cloud-upload me-2"></i>{{ _('Carga de Saldos Iniciales') }}
+                        <small class="float-end badge bg-light text-dark">{{ _('Implementación') }}</small>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-3">
+                        {{ _('Durante la implementación del sistema, cargue los saldos iniciales de prestaciones de sus empleados:') }}
+                    </p>
+                    <div class="btn-group" role="group">
+                        <a href="{{ url_for('carga_inicial_prestacion.nueva') }}" class="btn btn-outline-info">
+                            <i class="bi bi-person-plus me-1"></i>{{ _('Carga Individual') }}
+                        </a>
+                        <a href="{{ url_for('prestacion_management.initial_balance_bulk') }}" class="btn btn-outline-info">
+                            <i class="bi bi-file-earmark-excel me-1"></i>{{ _('Carga Masiva (Excel)') }}
+                        </a>
+                    </div>
+                    <small class="text-muted d-block mt-2">
+                        <i class="bi bi-info-circle"></i> 
+                        {{ _('Use la carga masiva para empresas con muchos empleados. Los registros se crean en estado borrador y deben aplicarse individualmente.') }}
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">{{ _('Actividad Reciente') }}</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>{{ _('Fecha') }}</th>
+                            <th>{{ _('Empleado') }}</th>
+                            <th>{{ _('Prestación') }}</th>
+                            <th>{{ _('Tipo Transacción') }}</th>
+                            <th>{{ _('Monto') }}</th>
+                            <th>{{ _('Saldo') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for trans in recent_transactions %}
+                        <tr>
+                            <td>{{ trans.fecha_transaccion.strftime('%Y-%m-%d') }}</td>
+                            <td>{{ trans.empleado.primer_nombre }} {{ trans.empleado.primer_apellido }}</td>
+                            <td>{{ trans.prestacion.codigo }} - {{ trans.prestacion.nombre }}</td>
+                            <td>
+                                {% if trans.tipo_transaccion == 'saldo_inicial' %}
+                                    <span class="badge bg-info">{{ _('Saldo Inicial') }}</span>
+                                {% elif trans.tipo_transaccion == 'acumulacion' %}
+                                    <span class="badge bg-success">{{ _('Acumulación') }}</span>
+                                {% elif trans.tipo_transaccion == 'pago' %}
+                                    <span class="badge bg-warning">{{ _('Pago') }}</span>
+                                {% elif trans.tipo_transaccion == 'ajuste' %}
+                                    <span class="badge bg-secondary">{{ _('Ajuste') }}</span>
+                                {% else %}
+                                    <span class="badge bg-light text-dark">{{ trans.tipo_transaccion }}</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ trans.moneda.codigo }} {{ "{:,.2f}".format(trans.monto_transaccion) }}</td>
+                            <td>{{ trans.moneda.codigo }} {{ "{:,.2f}".format(trans.saldo_nuevo) }}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted">{{ _('No hay actividad reciente.') }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

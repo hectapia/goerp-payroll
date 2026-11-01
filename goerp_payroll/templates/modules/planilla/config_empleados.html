@@ -1,0 +1,112 @@
+{#-
+SPDX-License-Identifier: Apache-2.0
+SPDX-FileCopyrightText: 2025 - 2026 BMO Soluciones, S.A.
+-#}
+
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            <i class="bi bi-people me-2"></i>
+            {{ _('Empleados') }} - {{ planilla.nombre }}
+        </h2>
+        <a href="{{ url_for('planilla.config', planilla_id=planilla.id) }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i>{{ _('Volver a Configuración') }}
+        </a>
+    </div>
+
+    <div class="row">
+        <!-- Add Employee Form -->
+        <div class="col-lg-4 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-coaty-light">
+                    <h5 class="mb-0"><i class="bi bi-plus-circle me-2"></i>{{ _('Agregar Empleado') }}</h5>
+                </div>
+                <div class="card-body">
+                    <form action="{{ url_for('planilla.add_empleado', planilla_id=planilla.id) }}" method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <div class="mb-3">
+                            <label class="form-label">{{ _('Empleado') }}</label>
+                            <select name="empleado_id" class="form-select" required>
+                                <option value="">{{ _('-- Seleccionar Empleado --') }}</option>
+                                {% for emp in empleados_disponibles %}
+                                    {% set is_assigned = emp.id in (empleados_asignados | map(attribute='empleado_id') | list) %}
+                                    {% if not is_assigned %}
+                                    <option value="{{ emp.id }}">{{ emp.primer_apellido }} {{ emp.segundo_apellido or '' }}, {{ emp.primer_nombre }} - {{ emp.identificacion_personal }}</option>
+                                    {% endif %}
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-coaty w-100">
+                            <i class="bi bi-plus me-1"></i>{{ _('Agregar Empleado') }}
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Employee List -->
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-coaty-light d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="bi bi-list-ul me-2"></i>{{ _('Empleados Asignados') }}
+                        <span class="badge bg-primary ms-2">{{ empleados_asignados | length }}</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if empleados_asignados %}
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>{{ _('Empleado') }}</th>
+                                    <th>{{ _('Identificación') }}</th>
+                                    <th>{{ _('Desde') }}</th>
+                                    <th class="text-center">{{ _('Activo') }}</th>
+                                    <th class="text-end">{{ _('Acciones') }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for assoc in empleados_asignados %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ assoc.empleado.primer_apellido }} {{ assoc.empleado.segundo_apellido or '' }}</strong>, {{ assoc.empleado.primer_nombre }}
+                                    </td>
+                                    <td><code>{{ assoc.empleado.identificacion_personal }}</code></td>
+                                    <td>{{ assoc.fecha_inicio.strftime('%d/%m/%Y') if assoc.fecha_inicio else '-' }}</td>
+                                    <td class="text-center">
+                                        {% if assoc.activo %}
+                                        <span class="badge bg-success">{{ _('Sí') }}</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">{{ _('No') }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end">
+                                        <form action="{{ url_for('planilla.remove_empleado', planilla_id=planilla.id, association_id=assoc.id) }}" method="POST" class="d-inline">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="{{ _('Remover') }}" onclick="return confirm('{{ _('¿Remover este empleado de la planilla?') }}')">
+                                                <i class="bi bi-x-lg"></i>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-people display-4 text-muted"></i>
+                        <p class="lead mt-3">{{ _('No hay empleados asignados a esta planilla') }}</p>
+                        <p class="text-muted">{{ _('Seleccione empleados del formulario para agregarlos.') }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

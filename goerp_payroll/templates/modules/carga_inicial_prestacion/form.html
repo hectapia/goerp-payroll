@@ -1,0 +1,164 @@
+{#-
+SPDX-License-Identifier: Apache-2.0
+SPDX-FileCopyrightText: 2025 - 2026 BMO Soluciones, S.A.
+-#}
+
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <h2><i class="bi bi-upload me-2"></i>
+                {% if carga %}
+                    {{ _('Editar Carga Inicial') }}
+                {% else %}
+                    {{ _('Nueva Carga Inicial') }}
+                {% endif %}
+            </h2>
+            <p class="text-muted">{{ _('Complete la información del saldo inicial acumulado') }}</p>
+        </div>
+    </div>
+
+
+    <div class="card">
+        <div class="card-body">
+            <form method="POST" novalidate>
+                {{ form.hidden_tag() }}
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        {{ form.empleado_id.label(class="form-label") }}
+                        {{ form.empleado_id(class="form-select" + (" is-invalid" if form.empleado_id.errors else "")) }}
+                        {% if form.empleado_id.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.empleado_id.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                        {% if form.empleado_id.description %}
+                            <div class="form-text">{{ form.empleado_id.description }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        {{ form.prestacion_id.label(class="form-label") }}
+                        {{ form.prestacion_id(class="form-select" + (" is-invalid" if form.prestacion_id.errors else "")) }}
+                        {% if form.prestacion_id.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.prestacion_id.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                        {% if form.prestacion_id.description %}
+                            <div class="form-text">{{ form.prestacion_id.description }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        {{ form.anio_corte.label(class="form-label") }}
+                        {{ form.anio_corte(class="form-control" + (" is-invalid" if form.anio_corte.errors else "")) }}
+                        {% if form.anio_corte.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.anio_corte.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                        {% if form.anio_corte.description %}
+                            <div class="form-text">{{ form.anio_corte.description }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        {{ form.mes_corte.label(class="form-label") }}
+                        {{ form.mes_corte(class="form-select" + (" is-invalid" if form.mes_corte.errors else "")) }}
+                        {% if form.mes_corte.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.mes_corte.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                        {% if form.mes_corte.description %}
+                            <div class="form-text">{{ form.mes_corte.description }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        {{ form.moneda_id.label(class="form-label") }}
+                        {{ form.moneda_id(class="form-select" + (" is-invalid" if form.moneda_id.errors else "")) }}
+                        {% if form.moneda_id.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.moneda_id.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                        {% if form.moneda_id.description %}
+                            <div class="form-text">{{ form.moneda_id.description }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-md-4 mb-3">
+                        {{ form.saldo_acumulado.label(class="form-label") }}
+                        {{ form.saldo_acumulado(class="form-control" + (" is-invalid" if form.saldo_acumulado.errors else "")) }}
+                        {% if form.saldo_acumulado.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.saldo_acumulado.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                        {% if form.saldo_acumulado.description %}
+                            <div class="form-text">{{ form.saldo_acumulado.description }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-md-4 mb-3">
+                        {{ form.tipo_cambio.label(class="form-label") }}
+                        {{ form.tipo_cambio(class="form-control" + (" is-invalid" if form.tipo_cambio.errors else "")) }}
+                        {% if form.tipo_cambio.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.tipo_cambio.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                        {% if form.tipo_cambio.description %}
+                            <div class="form-text">{{ form.tipo_cambio.description }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        {{ form.saldo_convertido.label(class="form-label") }}
+                        {{ form.saldo_convertido(class="form-control" + (" is-invalid" if form.saldo_convertido.errors else "")) }}
+                        {% if form.saldo_convertido.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.saldo_convertido.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                        {% if form.saldo_convertido.description %}
+                            <div class="form-text">{{ form.saldo_convertido.description }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        {{ form.observaciones.label(class="form-label") }}
+                        {{ form.observaciones(class="form-control" + (" is-invalid" if form.observaciones.errors else "")) }}
+                        {% if form.observaciones.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.observaciones.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                        {% if form.observaciones.description %}
+                            <div class="form-text">{{ form.observaciones.description }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="d-flex gap-2">
+                    {{ form.submit(class="btn btn-primary") }}
+                    <a href="{{ url_for('carga_inicial_prestacion.index') }}" class="btn btn-secondary">
+                        <i class="bi bi-x-circle me-1"></i>{{ _('Cancelar') }}
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

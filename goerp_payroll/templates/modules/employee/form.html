@@ -1,0 +1,260 @@
+{#-
+SPDX-License-Identifier: Apache-2.0
+SPDX-FileCopyrightText: 2025 - 2026 BMO Soluciones, S.A.
+-#}
+
+{% extends 'base.html' %}
+{% from 'macros.html' import render_field, render_form_errors %}
+
+{% block content %}
+<div class="container">
+    {{ render_form_errors(form) }}
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>{{ title }}</h2>
+        <a href="{{ url_for('employee.index') }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left me-1"></i>{{ _('Volver') }}
+        </a>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <form method="POST" action="">
+                {{ form.hidden_tag() }}
+                
+                <h5 class="mb-3">{{ _('Información Personal') }}</h5>
+                <div class="row">
+                    <div class="col-md-3">
+                        {{ render_field(form.primer_nombre) }}
+                    </div>
+                    <div class="col-md-3">
+                        {{ render_field(form.segundo_nombre) }}
+                    </div>
+                    <div class="col-md-3">
+                        {{ render_field(form.primer_apellido) }}
+                    </div>
+                    <div class="col-md-3">
+                        {{ render_field(form.segundo_apellido) }}
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-4">
+                        {{ render_field(form.tipo_identificacion) }}
+                    </div>
+                    <div class="col-md-4">
+                        {{ render_field(form.identificacion_personal) }}
+                    </div>
+                    <div class="col-md-4">
+                        {{ render_field(form.fecha_nacimiento) }}
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-4">
+                        {{ render_field(form.id_seguridad_social) }}
+                    </div>
+                    <div class="col-md-4">
+                        {{ render_field(form.id_fiscal) }}
+                    </div>
+                    <div class="col-md-4">
+                        {{ render_field(form.genero) }}
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-4">
+                        {{ render_field(form.nacionalidad) }}
+                    </div>
+                    <div class="col-md-4">
+                        {{ render_field(form.tipo_sangre) }}
+                    </div>
+                    <div class="col-md-4">
+                        {{ render_field(form.estado_civil) }}
+                    </div>
+                </div>
+                
+                <hr class="my-4">
+                <h5 class="mb-3">{{ _('Información Laboral') }}</h5>
+                
+                <div class="row">
+                    <div class="col-md-4">
+                        {{ render_field(form.codigo_empleado) }}
+                    </div>
+                    <div class="col-md-4">
+                        {{ render_field(form.fecha_alta) }}
+                    </div>
+                    <div class="col-md-4">
+                        {{ render_field(form.fecha_baja) }}
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-4">
+                        {{ render_field(form.tipo_contrato) }}
+                    </div>
+                    <div class="col-md-4">
+                        {{ render_field(form.cargo) }}
+                    </div>
+                    <div class="col-md-4">
+                        {{ render_field(form.area) }}
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-4">
+                        {{ render_field(form.centro_costos) }}
+                    </div>
+                    <div class="col-md-4">
+                        {% if employee %}
+                            <label for="{{ form.salario_base.id }}" class="form-label">{{ form.salario_base.label.text }}</label>
+                            {{ form.salario_base(class="form-control", readonly=true) }}
+                            <div class="form-text">
+                                {{ _('Para modificar el salario use el flujo de cambios salariales.') }}
+                            </div>
+                            <a href="{{ url_for('employee.salary_change_new', employee_id=employee.id) }}" class="btn btn-sm btn-warning mt-1">
+                                <i class="bi bi-pencil-square me-1"></i>{{ _('Autorizar Cambio Salarial') }}
+                            </a>
+                        {% else %}
+                            {{ render_field(form.salario_base) }}
+                        {% endif %}
+                    </div>
+                    <div class="col-md-4">
+                        {{ render_field(form.moneda_id) }}
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-4">
+                        {{ render_field(form.empresa_id) }}
+                    </div>
+                    <div class="col-md-4">
+                        {{ render_field(form.activo) }}
+                    </div>
+                </div>
+                
+                <hr class="my-4">
+                <h5 class="mb-3">{{ _('Información de Contacto') }}</h5>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        {{ render_field(form.correo) }}
+                    </div>
+                    <div class="col-md-6">
+                        {{ render_field(form.telefono) }}
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-12">
+                        {{ render_field(form.direccion) }}
+                    </div>
+                </div>
+                
+                <hr class="my-4">
+                <h5 class="mb-3">{{ _('Información Bancaria') }}</h5>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        {{ render_field(form.banco) }}
+                    </div>
+                    <div class="col-md-6">
+                        {{ render_field(form.numero_cuenta_bancaria) }}
+                    </div>
+                </div>
+                
+                <hr class="my-4">
+                <h5 class="mb-3">
+                    <i class="bi bi-calendar-check me-2"></i>{{ _('Datos Iniciales de Implementación') }}
+                </h5>
+                <p class="text-muted small mb-3">{{ _('Estos campos almacenan saldos acumulados cuando el sistema se implementa a mitad de un período fiscal.') }}</p>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        {{ render_field(form.salario_acumulado) }}
+                    </div>
+                    <div class="col-md-6">
+                        {{ render_field(form.impuesto_acumulado) }}
+                    </div>
+                </div>
+                
+                <p class="text-muted small mb-3">{{ _('Últimos tres salarios mensuales antes de la implementación:') }}</p>
+                <div class="row">
+                    <div class="col-md-4">
+                        {{ render_field(form.ultimo_salario_1) }}
+                    </div>
+                    <div class="col-md-4">
+                        {{ render_field(form.ultimo_salario_2) }}
+                    </div>
+                    <div class="col-md-4">
+                        {{ render_field(form.ultimo_salario_3) }}
+                    </div>
+                </div>
+                
+                {% if custom_fields %}
+                <hr class="my-4">
+                <h5 class="mb-3">
+                    <i class="bi bi-input-cursor-text me-2"></i>{{ _('Campos Personalizados') }}
+                </h5>
+                <p class="text-muted small mb-3">{{ _('Estos campos son personalizados y pueden ser configurados desde el menú de Configuración.') }}</p>
+                
+                <div class="row">
+                    {% for field in custom_fields %}
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            {% if field.tipo_dato == 'boolean' %}
+                                {# Checkbox for boolean fields #}
+                                <div class="form-check">
+                                    <input type="checkbox" 
+                                           class="form-check-input" 
+                                           name="custom_{{ field.nombre_campo }}" 
+                                           id="custom_{{ field.nombre_campo }}"
+                                           {% if custom_values.get(field.nombre_campo) %}checked{% endif %}>
+                                    <label class="form-check-label" for="custom_{{ field.nombre_campo }}">
+                                        {{ field.etiqueta }}
+                                    </label>
+                                </div>
+                            {% else %}
+                                <label class="form-label" for="custom_{{ field.nombre_campo }}">
+                                    {{ field.etiqueta }}
+                                </label>
+                                {% if field.tipo_dato == 'text' %}
+                                    <input type="text" 
+                                           class="form-control" 
+                                           name="custom_{{ field.nombre_campo }}" 
+                                           id="custom_{{ field.nombre_campo }}"
+                                           value="{{ custom_values.get(field.nombre_campo) or '' }}">
+                                {% elif field.tipo_dato == 'integer' %}
+                                    <input type="number" 
+                                           class="form-control" 
+                                           name="custom_{{ field.nombre_campo }}" 
+                                           id="custom_{{ field.nombre_campo }}"
+                                           step="1"
+                                           value="{{ custom_values.get(field.nombre_campo) or '' }}">
+                                {% elif field.tipo_dato == 'decimal' %}
+                                    <input type="number" 
+                                           class="form-control" 
+                                           name="custom_{{ field.nombre_campo }}" 
+                                           id="custom_{{ field.nombre_campo }}"
+                                           step="0.01"
+                                           value="{{ custom_values.get(field.nombre_campo) or '' }}">
+                                {% endif %}
+                            {% endif %}
+                            {% if field.descripcion %}
+                                <small class="text-muted">{{ field.descripcion }}</small>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                
+                <div class="mt-4">
+                    {{ form.submit(class="btn btn-primary") }}
+                    <a href="{{ url_for('employee.index') }}" class="btn btn-secondary">{{ _('Cancelar') }}</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

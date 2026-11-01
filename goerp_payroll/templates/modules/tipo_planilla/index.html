@@ -1,0 +1,73 @@
+{#-
+SPDX-License-Identifier: Apache-2.0
+SPDX-FileCopyrightText: 2025 - 2026 BMO Soluciones, S.A.
+-#}
+
+{% extends 'base.html' %}
+{% from 'macros.html' import render_pagination %}
+
+{% block content %}
+<div class="container">
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-card-list me-2"></i>{{ _('Tipos de Planilla') }}</h2>
+        <a href="{{ url_for('tipo_planilla.new') }}" class="btn btn-primary">
+            <i class="bi bi-plus-circle me-1"></i>{{ _('Nuevo Tipo de Planilla') }}
+        </a>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>{{ _('Código') }}</th>
+                            <th>{{ _('Descripción') }}</th>
+                            <th>{{ _('Periodicidad') }}</th>
+                            <th>{{ _('Días') }}</th>
+                            <th>{{ _('Períodos/Año') }}</th>
+                            <th>{{ _('Estado') }}</th>
+                            <th>{{ _('Acciones') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for tipo in tipos_planilla %}
+                        <tr>
+                            <td><strong>{{ tipo.codigo }}</strong></td>
+                            <td>{{ tipo.descripcion or '-' }}</td>
+                            <td>{{ tipo.periodicidad | capitalize }}</td>
+                            <td>{{ tipo.dias }}</td>
+                            <td>{{ tipo.periodos_por_anio }}</td>
+                            <td>
+                                {% if tipo.activo %}
+                                    <span class="badge bg-success">{{ _('Activo') }}</span>
+                                {% else %}
+                                    <span class="badge bg-warning">{{ _('Inactivo') }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{{ url_for('tipo_planilla.edit', id_=tipo.id) }}" class="btn btn-sm btn-outline-primary" title="{{ _('Editar') }}">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <form action="{{ url_for('tipo_planilla.delete', id_=tipo.id) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ _('¿Está seguro de eliminar este tipo de planilla?') }}');">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="{{ _('Eliminar') }}">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="7" class="text-center text-muted">{{ _('No hay tipos de planilla registrados.') }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {{ render_pagination(pagination, 'tipo_planilla.index') }}
+        </div>
+    </div>
+</div>
+{% endblock %}

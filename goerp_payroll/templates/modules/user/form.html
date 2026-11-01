@@ -1,0 +1,78 @@
+{#-
+SPDX-License-Identifier: Apache-2.0
+SPDX-FileCopyrightText: 2025 - 2026 BMO Soluciones, S.A.
+-#}
+
+{% extends 'base.html' %}
+{% from 'macros.html' import render_field, render_form_errors %}
+
+{% block content %}
+<div class="container">
+    {{ render_form_errors(form) }}
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>{{ title }}</h2>
+        <a href="{{ url_for('user.index') }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left me-1"></i>{{ _('Volver') }}
+        </a>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <form method="POST" action="">
+                {{ form.hidden_tag() }}
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        {{ render_field(form.usuario) }}
+                    </div>
+                    <div class="col-md-6">
+                        {{ render_field(form.password) }}
+                        {% if user %}
+                        <small class="text-muted">{{ _('Dejar en blanco para mantener la contraseña actual.') }}</small>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        {{ render_field(form.nombre) }}
+                    </div>
+                    <div class="col-md-6">
+                        {{ render_field(form.apellido) }}
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        {{ render_field(form.correo_electronico) }}
+                    </div>
+                    <div class="col-md-6">
+                        {{ render_field(form.tipo) }}
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        {{ render_field(form.idioma) }}
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        {{ render_field(form.activo) }}
+                    </div>
+                    <div class="col-md-6">
+                        {{ render_field(form.empresa_ids) }}
+                    </div>
+                </div>
+                
+                <div class="mt-4">
+                    {{ form.submit(class="btn btn-primary") }}
+                    <a href="{{ url_for('user.index') }}" class="btn btn-secondary">{{ _('Cancelar') }}</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

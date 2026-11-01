@@ -1,0 +1,151 @@
+{#-
+SPDX-License-Identifier: Apache-2.0
+SPDX-FileCopyrightText: 2025 - 2026 BMO Soluciones, S.A.
+-#}
+
+{# Form rendering macros #}
+
+{% macro render_field(field, class="form-control", disabled=False) %}
+<div class="mb-3">
+    {% if field.type == 'BooleanField' %}
+        {# Checkbox with Bootstrap 5 form-check structure #}
+        <div class="form-check">
+            {{ field(class="form-check-input" + (" is-invalid" if field.errors else ""), disabled=disabled) }}
+            {{ field.label(class="form-check-label") }}
+            {% if field.errors %}
+                {% for error in field.errors %}
+                    <div class="invalid-feedback d-block">{{ error }}</div>
+                {% endfor %}
+            {% endif %}
+        </div>
+    {% elif field.type == 'RadioField' %}
+        {# Radio buttons with Bootstrap 5 form-check structure #}
+        {{ field.label(class="form-label") }}
+        {% for subfield in field %}
+            <div class="form-check">
+                {{ subfield(class="form-check-input" + (" is-invalid" if field.errors else ""), disabled=disabled) }}
+                {{ subfield.label(class="form-check-label") }}
+            </div>
+        {% endfor %}
+        {% if field.errors %}
+            {% for error in field.errors %}
+                <div class="invalid-feedback d-block">{{ error }}</div>
+            {% endfor %}
+        {% endif %}
+    {% elif field.type == 'SelectField' or field.type == 'SelectMultipleField' %}
+        {# Select dropdowns with Bootstrap 5 form-select #}
+        {{ field.label(class="form-label") }}
+        {{ field(class="form-select" + (" is-invalid" if field.errors else ""), disabled=disabled) }}
+        {% if field.errors %}
+            {% for error in field.errors %}
+                <div class="invalid-feedback d-block">{{ error }}</div>
+            {% endfor %}
+        {% endif %}
+    {% else %}
+        {# Standard inputs (text, email, password, number, date, etc.) with form-control #}
+        {{ field.label(class="form-label") }}
+        {{ field(class="form-control" + (" is-invalid" if field.errors else ""), disabled=disabled) }}
+        {% if field.errors %}
+            {% for error in field.errors %}
+                <div class="invalid-feedback d-block">{{ error }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endif %}
+</div>
+{% endmacro %}
+
+{% macro render_messages() %}
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+{% endmacro %}
+
+{% macro render_form_errors(form) %}
+{% if form.errors %}
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <strong>{{ _('Por favor corrija los siguientes errores:') }}</strong>
+        <ul class="mb-0 mt-2">
+            {% for field_name, errors in form.errors.items() %}
+                {% for error in errors %}
+                    <li>{{ form[field_name].label.text }}: {{ error }}</li>
+                {% endfor %}
+            {% endfor %}
+        </ul>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+{% endif %}
+{% endmacro %}
+
+{% macro render_pagination(pagination, endpoint) %}
+{% if pagination.pages > 1 %}
+{# Create a dict of query args excluding 'page' to avoid duplicate keyword argument #}
+{% set query_args = request.args.to_dict(flat=False) %}
+{% if query_args.pop('page', None) %}{% endif %}
+<nav aria-label="{{ _('Navegación de páginas') }}" class="mt-4">
+    <div class="d-flex justify-content-between align-items-center">
+        <small class="text-muted">
+            {{ _('Mostrando') }} {{ ((pagination.page - 1) * pagination.per_page) + 1 }} - 
+            {{ [pagination.page * pagination.per_page, pagination.total]|min }} 
+            {{ _('de') }} {{ pagination.total }} {{ _('registros') }}
+        </small>
+        <ul class="pagination pagination-sm mb-0">
+            {# Previous page #}
+            {% if pagination.has_prev %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for(endpoint, page=pagination.prev_num, **query_args) }}" aria-label="{{ _('Anterior') }}">
+                        <span aria-hidden="true">&laquo;</span>
+                    </a>
+                </li>
+            {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link" aria-label="{{ _('Anterior') }}">
+                        <span aria-hidden="true">&laquo;</span>
+                    </span>
+                </li>
+            {% endif %}
+            
+            {# Page numbers #}
+            {% for page_num in pagination.iter_pages(left_edge=1, left_current=2, right_current=2, right_edge=1) %}
+                {% if page_num %}
+                    {% if page_num == pagination.page %}
+                        <li class="page-item active" aria-current="page">
+                            <span class="page-link">{{ page_num }}</span>
+                        </li>
+                    {% else %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for(endpoint, page=page_num, **query_args) }}">{{ page_num }}</a>
+                        </li>
+                    {% endif %}
+                {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">…</span>
+                    </li>
+                {% endif %}
+            {% endfor %}
+            
+            {# Next page #}
+            {% if pagination.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for(endpoint, page=pagination.next_num, **query_args) }}" aria-label="{{ _('Siguiente') }}">
+                        <span aria-hidden="true">&raquo;</span>
+                    </a>
+                </li>
+            {% else %}
+                <li class="page-item disabled">
+                    <span class="page-link" aria-label="{{ _('Siguiente') }}">
+                        <span aria-hidden="true">&raquo;</span>
+                    </span>
+                </li>
+            {% endif %}
+        </ul>
+    </div>
+</nav>
+{% endif %}
+{% endmacro %}

@@ -1,0 +1,141 @@
+{#-
+SPDX-License-Identifier: Apache-2.0
+SPDX-FileCopyrightText: 2025 - 2026 BMO Soluciones, S.A.
+-#}
+
+{% extends "base.html" %}
+{% block content %}
+<div class="content-header">
+    <h3>
+        Log de Ejecución - Nómina
+    </h3>
+    <div>
+        <a href="{{ url_for('planilla.ver_nomina', planilla_id=planilla.id, nomina_id=nomina.id) }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Volver a la Nómina
+        </a>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">Información de la Nómina</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-4">
+                <strong>Planilla:</strong><br>
+                {{ planilla.nombre }}
+            </div>
+            <div class="col-md-4">
+                <strong>Período:</strong><br>
+                {{ nomina.periodo_inicio.strftime('%d/%m/%Y') }} - {{ nomina.periodo_fin.strftime('%d/%m/%Y') }}
+            </div>
+            <div class="col-md-4">
+                <strong>Estado:</strong><br>
+                <span class="badge 
+                    {% if nomina.estado == 'generated' %}bg-success
+                    {% elif nomina.estado == 'approved' %}bg-info
+                    {% elif nomina.estado == 'applied' %}bg-primary
+                    {% elif nomina.estado == 'error' %}bg-danger
+                    {% else %}bg-warning{% endif %}">
+                    {{ nomina.estado|upper }}
+                </span>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if comprobante_warnings %}
+<div class="card mb-4 border-warning">
+    <div class="card-header bg-warning text-dark">
+        <h5 class="mb-0">
+            <i class="bi bi-exclamation-triangle"></i> Advertencias de Configuración Contable
+        </h5>
+    </div>
+    <div class="card-body">
+        <p class="mb-3">
+            Se detectaron las siguientes configuraciones incompletas al generar el comprobante contable:
+        </p>
+        <ul class="list-group">
+            {% for warning in comprobante_warnings %}
+            <li class="list-group-item list-group-item-warning">
+                <i class="bi bi-exclamation-circle"></i> {{ warning }}
+            </li>
+            {% endfor %}
+        </ul>
+        <div class="alert alert-info mt-3 mb-0">
+            <i class="bi bi-info-circle"></i>
+            <strong>Recomendación:</strong> Configure las cuentas contables y descripciones faltantes en los conceptos de nómina 
+            (Percepciones, Deducciones, Prestaciones) y en la configuración de la planilla.
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% if log_entries %}
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="bi bi-list-ul"></i> Log de Procesamiento
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-sm table-hover">
+                <thead>
+                    <tr>
+                        <th style="width: 20%;">Fecha/Hora</th>
+                        <th style="width: 15%;">Tipo</th>
+                        <th>Mensaje</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for entry in log_entries %}
+                    <tr>
+                        <td>
+                            {% if entry.timestamp %}
+                                {{ entry.timestamp[:19] }}
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% set entry_status = entry.status or entry.tipo %}
+                            {% if entry_status == 'advertencia_contabilidad' or entry_status == 'warning' %}
+                                <span class="badge bg-warning text-dark">
+                                    <i class="bi bi-exclamation-triangle"></i> Advertencia
+                                </span>
+                            {% elif entry_status == 'error' %}
+                                <span class="badge bg-danger">
+                                    <i class="bi bi-x-circle"></i> Error
+                                </span>
+                            {% elif entry_status == 'info' or entry_status == 'success' %}
+                                <span class="badge bg-success">
+                                    <i class="bi bi-check-circle"></i> OK
+                                </span>
+                            {% else %}
+                                <span class="badge bg-secondary">{{ entry_status }}</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ entry.message or entry.mensaje }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="alert alert-info">
+    <i class="bi bi-info-circle"></i>
+    No hay mensajes en el log de procesamiento para esta nómina.
+</div>
+{% endif %}
+
+{% if not comprobante_warnings and not log_entries %}
+<div class="alert alert-success">
+    <i class="bi bi-check-circle"></i>
+    <strong>¡Perfecto!</strong> No se detectaron advertencias ni errores durante el procesamiento de esta nómina.
+</div>
+{% endif %}
+
+{% endblock %}
+

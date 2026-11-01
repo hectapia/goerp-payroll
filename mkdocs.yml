@@ -1,0 +1,128 @@
+site_name: GoERP Payroll - Docs
+site_description: Motor para el calculo de nóminas y planillas
+site_author: BMO Soluciones, S.A.
+site_url: https://bmosoluciones.github.io/goerp-payroll/
+
+repo_name: bmosoluciones/goerp-payroll
+repo_url: https://github.com/bmosoluciones/coati-payroll
+
+theme:
+  name: material
+  language: es
+  palette:
+    - scheme: default
+      primary: brown
+      accent: amber
+      toggle:
+        icon: material/brightness-7
+        name: Cambiar a modo oscuro
+    - scheme: slate
+      primary: brown
+      accent: amber
+      toggle:
+        icon: material/brightness-4
+        name: Cambiar a modo claro
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - navigation.footer
+    - toc.integrate
+    - search.suggest
+    - search.highlight
+    - content.tabs.link
+    - content.code.copy
+
+plugins:
+  - search
+  - glightbox
+
+markdown_extensions:
+  - abbr
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - toc:
+      permalink: true
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.betterem:
+      smart_enable: all
+  - pymdownx.caret
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tilde
+
+nav:
+  - Inicio: index.md
+  - Instalación:
+    - Requisitos del Sistema: instalacion/requisitos.md
+    - Instalación: instalacion/instalacion.md
+  - Tutorial Completo:
+    - Guía de Inicio Rápido: guia/inicio-rapido.md
+    - Primeros Pasos: guia/primeros-pasos.md
+    - Configuración Inicial: instalacion/configuracion.md
+    - Paso a Paso - Nómina Completa: tutorial/nomina-completa.md
+  - Guía de Uso:
+    - Gestión de Usuarios: guia/usuarios.md
+    - Gestión de Empresas: guia/empresas.md
+    - Monedas y Tipos de Cambio: guia/monedas.md
+    - Gestión de Empleados: guia/empleados.md
+    - Percepciones (Ingresos): guia/percepciones.md
+    - Deducciones: guia/deducciones.md
+    - Prestaciones (Aportes Patronales): guia/prestaciones.md
+    - Reglas de Cálculo: guia/reglas-calculo.md
+    - Préstamos y Adelantos: guia/prestamos.md
+    - Campos Personalizados: guia/campos-personalizados.md
+    - Configuración de Planillas: guia/planillas.md
+    - Ejecución de Nómina: guia/nomina.md
+    - Sistema de Inasistencias: sistema-inasistencias.md
+    - Sistema de Plugins: guia/plugins.md
+    - Gestión de Vacaciones: guia/vacaciones.md
+    - Configuración Contable: guia/configuracion-contable.md
+  - Características Avanzadas:
+    - Integration Architecture Proposal: integration-architecture.md
+    - Sistema de Colas: queue_system.md
+    - Procesamiento en Segundo Plano: background-payroll-processing.md
+    - Compatibilidad de Base de Datos: database-compatibility.md
+    - Implementación Agnóstica: database-agnostic-implementation.md
+    - Control de Acceso (RBAC): rbac.md
+    - Módulo de Vacaciones (Técnico): modulo-vacaciones.md
+    - Carga de Saldos Iniciales: CARGA_SALDOS_INICIALES.md
+    - Respaldos Automatizados: automated-backups.md
+    - Internacionalización: INTERNATIONALIZATION.md
+    - Traducciones: TRANSLATIONS.md
+    - Plantilla Excel Novedades: plantilla-excel-novedades.md
+  - Referencia:
+    - Glosario: referencia/glosario.md
+    - Preguntas Frecuentes: referencia/faq.md
+    - Modelo de datos (ERD): referencia/modelo-datos.md
+    - Importación de Tipos de Cambio: referencia/importacion-tipos-de-cambio.md
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/bmosoluciones/coati-payroll
+
+copyright: Copyright &copy; 2025 BMO Soluciones, S.A.

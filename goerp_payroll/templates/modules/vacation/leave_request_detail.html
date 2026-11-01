@@ -1,0 +1,163 @@
+{#-
+SPDX-License-Identifier: Apache-2.0
+SPDX-FileCopyrightText: 2025 - 2026 BMO Soluciones, S.A.
+-#}
+
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>{{ _('Solicitud de Vacaciones') }}</h2>
+        <a href="{{ url_for('vacation.leave_request_index') }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left me-1"></i>{{ _('Volver') }}
+        </a>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">{{ _('Detalles de la Solicitud') }}</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-4">{{ _('Empleado') }}</dt>
+                        <dd class="col-sm-8">{{ leave_request.empleado.primer_nombre }} {{ leave_request.empleado.primer_apellido }}</dd>
+                        
+                        <dt class="col-sm-4">{{ _('Código') }}</dt>
+                        <dd class="col-sm-8"><strong>{{ leave_request.empleado.codigo_empleado }}</strong></dd>
+                        
+                        <dt class="col-sm-4">{{ _('Fecha de Inicio') }}</dt>
+                        <dd class="col-sm-8">{{ leave_request.start_date.strftime('%Y-%m-%d') }}</dd>
+                        
+                        <dt class="col-sm-4">{{ _('Fecha de Fin') }}</dt>
+                        <dd class="col-sm-8">{{ leave_request.end_date.strftime('%Y-%m-%d') }}</dd>
+                        
+                        <dt class="col-sm-4">{{ _('Unidades') }}</dt>
+                        <dd class="col-sm-8">{{ leave_request.units }} {{ leave_request.account.policy.unit_type }}</dd>
+                        
+                        <dt class="col-sm-4">{{ _('Estado') }}</dt>
+                        <dd class="col-sm-8">
+                            {% if leave_request.estado == 'pending' %}
+                                <span class="badge bg-warning">{{ _('Pendiente') }}</span>
+                            {% elif leave_request.estado == 'approved' %}
+                                <span class="badge bg-success">{{ _('Aprobado') }}</span>
+                            {% elif leave_request.estado == 'rejected' %}
+                                <span class="badge bg-danger">{{ _('Rechazado') }}</span>
+                            {% elif leave_request.estado == 'taken' %}
+                                <span class="badge bg-info">{{ _('Disfrutado') }}</span>
+                            {% endif %}
+                        </dd>
+                        
+                        <dt class="col-sm-4">{{ _('Fecha de Solicitud') }}</dt>
+                        <dd class="col-sm-8">{{ leave_request.creado.strftime('%Y-%m-%d') }}</dd>
+                        
+                        <dt class="col-sm-4">{{ _('Solicitado por') }}</dt>
+                        <dd class="col-sm-8">{{ leave_request.creado_por }}</dd>
+                        
+                        {% if leave_request.fecha_aprobacion %}
+                        <dt class="col-sm-4">{{ _('Fecha de Aprobación') }}</dt>
+                        <dd class="col-sm-8">{{ leave_request.fecha_aprobacion.strftime('%Y-%m-%d') }}</dd>
+                        
+                        <dt class="col-sm-4">{{ _('Aprobado por') }}</dt>
+                        <dd class="col-sm-8">{{ leave_request.aprobado_por }}</dd>
+                        {% endif %}
+                        
+                        {% if leave_request.observaciones %}
+                        <dt class="col-sm-4">{{ _('Observaciones') }}</dt>
+                        <dd class="col-sm-8">{{ leave_request.observaciones }}</dd>
+                        {% endif %}
+                        
+                        {% if leave_request.motivo_rechazo %}
+                        <dt class="col-sm-4">{{ _('Motivo de Rechazo') }}</dt>
+                        <dd class="col-sm-8">
+                            <div class="alert alert-danger mb-0">
+                                {{ leave_request.motivo_rechazo }}
+                            </div>
+                        </dd>
+                        {% endif %}
+                    </dl>
+                </div>
+            </div>
+
+            {% if leave_request.estado == 'pending' %}
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">{{ _('Acciones') }}</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('vacation.leave_request_approve', request_id=leave_request.id) }}" class="d-inline">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-success" 
+                                onclick="return confirm('{{ _('¿Está seguro de aprobar esta solicitud?') }}');">
+                            <i class="bi bi-check-circle me-1"></i>{{ _('Aprobar') }}
+                        </button>
+                    </form>
+                    
+                    <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#rejectModal">
+                        <i class="bi bi-x-circle me-1"></i>{{ _('Rechazar') }}
+                    </button>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">{{ _('Balance de Cuenta') }}</h5>
+                </div>
+                <div class="card-body text-center">
+                    <h2>{{ leave_request.account.current_balance }}</h2>
+                    <p class="text-muted">{{ leave_request.account.policy.unit_type }} {{ _('disponibles') }}</p>
+                    <a href="{{ url_for('vacation.account_detail', account_id=leave_request.account.id) }}" 
+                       class="btn btn-sm btn-outline-primary">
+                        {{ _('Ver Cuenta') }}
+                    </a>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">{{ _('Política Aplicable') }}</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>{{ leave_request.account.policy.nombre }}</strong></p>
+                    <p class="small text-muted">{{ leave_request.account.policy.descripcion }}</p>
+                    <a href="{{ url_for('vacation.policy_detail', policy_id=leave_request.account.policy.id) }}" 
+                       class="btn btn-sm btn-outline-primary">
+                        {{ _('Ver Política') }}
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Reject Modal -->
+<div class="modal fade" id="rejectModal" tabindex="-1" aria-labelledby="rejectModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('vacation.leave_request_reject', request_id=leave_request.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="rejectModalLabel">{{ _('Rechazar Solicitud') }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="motivo_rechazo" class="form-label">{{ _('Motivo del Rechazo') }}</label>
+                        <textarea class="form-control" id="motivo_rechazo" name="motivo_rechazo" rows="3" required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('Cancelar') }}</button>
+                    <button type="submit" class="btn btn-danger">{{ _('Rechazar Solicitud') }}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,76 @@
+{#-
+SPDX-License-Identifier: Apache-2.0
+SPDX-FileCopyrightText: 2025 - 2026 BMO Soluciones, S.A.
+-#}
+
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <h2><i class="bi bi-gear me-2"></i>{{ _('Configuración Global') }}</h2>
+            <p class="text-muted">{{ _('Configure las opciones generales del sistema') }}</p>
+        </div>
+    </div>
+
+
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-translate me-2"></i>{{ _('Idioma del Sistema') }}</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">{{ _('Seleccione el idioma predeterminado para la aplicación') }}</p>
+
+                    <form method="POST" action="{{ url_for('configuracion.cambiar_idioma') }}">
+                        {{ form.csrf_token }}
+                        <div class="mb-3">
+                            {{ form.idioma.label(class="form-label") }}
+                            {{ form.idioma(class="form-select") }}
+                            <div class="form-text">
+                                {{ _('Los cambios se aplicarán inmediatamente') }}
+                            </div>
+                        </div>
+                        <div class="d-flex gap-2">
+                            {{ form.submit(class="btn btn-primary") }}
+                            <a href="{{ url_for('app.index') }}" class="btn btn-secondary">
+                                <i class="bi bi-x-circle me-1"></i>{{ _('Cancelar') }}
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>{{ _('Información') }}</h5>
+                </div>
+                <div class="card-body">
+                    <h6>{{ _('Idioma Actual') }}</h6>
+                    <p class="lead">{{ language_names[current_language] }}</p>
+
+                    <hr>
+
+                    <h6>{{ _('Idiomas Disponibles') }}</h6>
+                    <ul>
+                        <li><strong>English</strong> - {{ _('Inglés') }}</li>
+                        <li><strong>Español</strong> - {{ _('Español') }}</li>
+                    </ul>
+
+                    <hr>
+
+                    <h6>{{ _('Variable de Entorno') }}</h6>
+                    <p class="small text-muted">
+                        {{ _('Puede configurar el idioma inicial usando la variable de entorno') }}
+                        <code>COATI_LANG</code> ({{ _('valores: en, es') }})
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

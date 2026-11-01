@@ -1,0 +1,326 @@
+{#- SPDX-License-Identifier: Apache-2.0 SPDX-FileCopyrightText: 2025 - 2026 BMO
+Soluciones, S.A. -#} {% extends 'base.html' %} {% block content %}
+<div class="container-fluid">
+    <h2 class="mb-4"><i class="bi bi-speedometer2 me-2"></i>{{ _('Panel principal') }}</h2>
+
+    <!-- Dashboard Cards - Statistics -->
+    <div class="row g-3 mb-4">
+        <!-- Empleados Card -->
+        <div class="col-12 col-sm-6 col-lg-3">
+            <div class="card dashboard-card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="dashboard-icon bg-primary-light">
+                            <i class="bi bi-people"></i>
+                        </div>
+                        <div class="ms-3 flex-grow-1">
+                            <h6 class="dashboard-card-title">
+                                {{ _('Empleados') }}
+                            </h6>
+                            <a
+                                href="{{ url_for('employee.index') }}"
+                                class="text-decoration-none"
+                            >
+                                <h3 class="dashboard-card-value">
+                                    {{ total_empleados }}
+                                </h3></a
+                            >
+                            <p class="dashboard-card-label">
+                                {{ _('Activos') }}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Empresas Card -->
+        <div class="col-12 col-sm-6 col-lg-3">
+            <div class="card dashboard-card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="dashboard-icon bg-success-light">
+                            <i class="bi bi-building"></i>
+                        </div>
+                        <div class="ms-3 flex-grow-1">
+                            <h6 class="dashboard-card-title">
+                                {{ _('Empresas') }}
+                            </h6>
+                            <a
+                                href="{{ url_for('empresa.index') }}"
+                                class="text-decoration-none"
+                            >
+                                <h3 class="dashboard-card-value">
+                                    {{ total_empresas }}
+                                </h3>
+                            </a>
+                            <p class="dashboard-card-label">
+                                {{ _('Registradas') }}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Planillas Card -->
+        <div class="col-12 col-sm-6 col-lg-3">
+            <div class="card dashboard-card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="dashboard-icon bg-warning-light">
+                            <i class="bi bi-calculator"></i>
+                        </div>
+                        <div class="ms-3 flex-grow-1">
+                            <h6 class="dashboard-card-title">
+                                {{ _('Planillas') }}
+                            </h6>
+                            <a
+                                href="{{ url_for('planilla.index') }}"
+                                class="text-decoration-none"
+                            >
+                                <h3 class="dashboard-card-value">
+                                    {{ total_planillas }}
+                                </h3>
+                            </a>
+                            <p class="dashboard-card-label">
+                                {{ _('Configuradas') }}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Nóminas Card -->
+        <div class="col-12 col-sm-6 col-lg-3">
+            <div class="card dashboard-card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="dashboard-icon bg-info-light">
+                            <i class="bi bi-file-earmark-text"></i>
+                        </div>
+                        <div class="ms-3 flex-grow-1">
+                            <h6 class="dashboard-card-title">
+                                {{ _('Nóminas') }}
+                            </h6>
+                            <a
+                                href="{{ url_for('nomina.index') }}"
+                                class="text-decoration-none"
+                            >
+                                <h3 class="dashboard-card-value">
+                                    {{ total_nominas }}
+                                </h3>
+                            </a>
+                            <p class="dashboard-card-label">
+                                {{ _('Procesadas') }}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions Section -->
+    <div class="row g-3 mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex align-items-center">
+                    <i class="bi bi-lightning-charge me-2"></i>
+                    <span>{{ _('Acciones Rápidas') }}</span>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-12 col-md-6 col-lg-4">
+                            <a
+                                href="{{ url_for('employee.new') }}"
+                                class="quick-action-card"
+                            >
+                                <div class="quick-action-icon bg-primary-light">
+                                    <i class="bi bi-person-plus"></i>
+                                </div>
+                                <div class="quick-action-content">
+                                    <h6>{{ _('Nuevo Empleado') }}</h6>
+                                    <p>
+                                        {{ _('Registrar un nuevo empleado en el
+                                        sistema') }}
+                                    </p>
+                                </div>
+                            </a>
+                        </div>
+
+                        <div class="col-12 col-md-6 col-lg-4">
+                            <a
+                                href="{{ url_for('planilla.new') }}"
+                                class="quick-action-card"
+                            >
+                                <div class="quick-action-icon bg-success-light">
+                                    <i class="bi bi-file-earmark-plus"></i>
+                                </div>
+                                <div class="quick-action-content">
+                                    <h6>{{ _('Nueva Planilla') }}</h6>
+                                    <p>
+                                        {{ _('Crear una nueva configuración de
+                                        planilla') }}
+                                    </p>
+                                </div>
+                            </a>
+                        </div>
+
+                        <div class="col-12 col-md-6 col-lg-4">
+                            <a
+                                href="{{ url_for('planilla.index') }}"
+                                class="quick-action-card"
+                            >
+                                <div class="quick-action-icon bg-warning-light">
+                                    <i class="bi bi-play-circle"></i>
+                                </div>
+                                <div class="quick-action-content">
+                                    <h6>{{ _('Ejecutar Nómina') }}</h6>
+                                    <p>
+                                        {{ _('Procesar nómina de una planilla
+                                        existente') }}
+                                    </p>
+                                </div>
+                            </a>
+                        </div>
+
+                        <div class="col-12 col-md-6 col-lg-4">
+                            <a
+                                href="{{ url_for('employee.index') }}"
+                                class="quick-action-card"
+                            >
+                                <div class="quick-action-icon bg-info-light">
+                                    <i class="bi bi-people"></i>
+                                </div>
+                                <div class="quick-action-content">
+                                    <h6>{{ _('Ver Empleados') }}</h6>
+                                    <p>
+                                        {{ _('Consultar listado de empleados')
+                                        }}
+                                    </p>
+                                </div>
+                            </a>
+                        </div>
+
+                        <div class="col-12 col-md-6 col-lg-4">
+                            <a
+                                href="{{ url_for('empresa.index') }}"
+                                class="quick-action-card"
+                            >
+                                <div
+                                    class="quick-action-icon bg-secondary-light"
+                                >
+                                    <i class="bi bi-building-gear"></i>
+                                </div>
+                                <div class="quick-action-content">
+                                    <h6>{{ _('Gestionar Empresas') }}</h6>
+                                    <p>
+                                        {{ _('Administrar empresas del sistema')
+                                        }}
+                                    </p>
+                                </div>
+                            </a>
+                        </div>
+
+                        <div class="col-12 col-md-6 col-lg-4">
+                            <a
+                                href="{{ url_for('prestamo.index') }}"
+                                class="quick-action-card"
+                            >
+                                <div class="quick-action-icon bg-danger-light">
+                                    <i class="bi bi-cash-coin"></i>
+                                </div>
+                                <div class="quick-action-content">
+                                    <h6>{{ _('Préstamos') }}</h6>
+                                    <p>
+                                        {{ _('Gestionar préstamos y adelantos')
+                                        }}
+                                    </p>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Payrolls Section -->
+    {% if recent_nominas %}
+    <div class="row g-3">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex align-items-center">
+                    <i class="bi bi-clock-history me-2"></i>
+                    <span>{{ _('Nóminas Recientes') }}</span>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover table-sm">
+                            <thead>
+                                <tr>
+                                    <th>{{ _('Planilla') }}</th>
+                                    <th>{{ _('Período') }}</th>
+                                    <th>{{ _('Estado') }}</th>
+                                    <th>{{ _('Fecha Creación') }}</th>
+                                    <th>{{ _('Acciones') }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for nomina in recent_nominas %}
+                                <tr>
+                                    <td>
+                                        {{ nomina.planilla.nombre if
+                                        nomina.planilla else '-' }}
+                                    </td>
+                                    <td>
+                                        {% if nomina.periodo_inicio and
+                                        nomina.periodo_fin %} {{
+                                        nomina.periodo_inicio.strftime('%d/%m/%Y')
+                                        }} - {{
+                                        nomina.periodo_fin.strftime('%d/%m/%Y')
+                                        }} {% else %} - {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if nomina.estado == 'generated' %}
+                                        <span class="badge bg-warning"
+                                            >{{ _('Generada') }}</span
+                                        >
+                                        {% elif nomina.estado == 'applied' %}
+                                    <span class="badge bg-success"
+                                        >{{ _('Aplicada') }}</span
+                                    >
+                                        {% else %}
+                                        <span class="badge bg-secondary"
+                                            >{{ nomina.estado or '-' }}</span
+                                        >
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {{
+                                        nomina.fecha_generacion.strftime('%d/%m/%Y
+                                        %H:%M') if nomina.fecha_generacion else
+                                        '-' }}
+                                    </td>
+                                    <td>
+                                        <a
+                                            href="{{ url_for('planilla.ver_nomina', planilla_id=nomina.planilla_id, nomina_id=nomina.id) }}"
+                                            class="btn btn-sm btn-outline-primary"
+                                        >
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

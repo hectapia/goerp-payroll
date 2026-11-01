@@ -1,0 +1,153 @@
+{#-
+SPDX-License-Identifier: Apache-2.0
+SPDX-FileCopyrightText: 2025 - 2026 BMO Soluciones, S.A.
+-#}
+
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container-fluid">
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-cash-coin me-2"></i>{{ _('Préstamos y Adelantos') }}</h2>
+        <a href="{{ url_for('prestamo.new') }}" class="btn btn-primary">
+            <i class="bi bi-plus-circle me-1"></i>{{ _('Nuevo Préstamo/Adelanto') }}
+        </a>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-3">
+        <div class="card-body">
+            <form method="GET" action="{{ url_for('prestamo.index') }}" class="row g-3">
+                <div class="col-md-4">
+                    <label for="empleado_id" class="form-label">{{ _('Empleado') }}</label>
+                    <select name="empleado_id" id="empleado_id" class="form-select">
+                        <option value="">{{ _('-- Todos los empleados --') }}</option>
+                        {% for emp in empleados %}
+                        <option value="{{ emp.id }}" {% if filtro_empleado == emp.id %}selected{% endif %}>
+                            {{ emp.primer_nombre }} {{ emp.primer_apellido }} - {{ emp.codigo_empleado }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="tipo" class="form-label">{{ _('Tipo') }}</label>
+                    <select name="tipo" id="tipo" class="form-select">
+                        <option value="">{{ _('-- Todos --') }}</option>
+                        <option value="advance" {% if filtro_tipo == 'advance' %}selected{% endif %}>{{ _('Adelanto') }}</option>
+                        <option value="loan" {% if filtro_tipo == 'loan' %}selected{% endif %}>{{ _('Préstamo') }}</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="estado" class="form-label">{{ _('Estado') }}</label>
+                    <select name="estado" id="estado" class="form-select">
+                        <option value="">{{ _('-- Todos --') }}</option>
+                        <option value="draft" {% if filtro_estado == 'draft' %}selected{% endif %}>{{ _('Borrador') }}</option>
+                        <option value="pending" {% if filtro_estado == 'pending' %}selected{% endif %}>{{ _('Pendiente') }}</option>
+                        <option value="approved" {% if filtro_estado == 'approved' %}selected{% endif %}>{{ _('Aprobado') }}</option>
+                        <option value="applied" {% if filtro_estado == 'applied' %}selected{% endif %}>{{ _('Aplicado') }}</option>
+                        <option value="paid" {% if filtro_estado == 'paid' %}selected{% endif %}>{{ _('Pagado') }}</option>
+                        <option value="rejected" {% if filtro_estado == 'rejected' %}selected{% endif %}>{{ _('Rechazado') }}</option>
+                        <option value="cancelled" {% if filtro_estado == 'cancelled' %}selected{% endif %}>{{ _('Cancelado') }}</option>
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-secondary w-100">
+                        <i class="bi bi-funnel me-1"></i>{{ _('Filtrar') }}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Loans Table -->
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>{{ _('Empleado') }}</th>
+                            <th>{{ _('Tipo') }}</th>
+                            <th>{{ _('Fecha Solicitud') }}</th>
+                            <th>{{ _('Monto') }}</th>
+                            <th>{{ _('Cuotas') }}</th>
+                            <th>{{ _('Saldo Pendiente') }}</th>
+                            <th>{{ _('Estado') }}</th>
+                            <th>{{ _('Acciones') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for prestamo in prestamos %}
+                        <tr>
+                            <td>
+                                {{ prestamo.empleado.primer_nombre }} {{ prestamo.empleado.primer_apellido }}<br>
+                                <small class="text-muted">{{ prestamo.empleado.codigo_empleado }}</small>
+                            </td>
+                            <td>
+                                {% if prestamo.tipo == 'advance' %}
+                                    <span class="badge bg-info">{{ _('Adelanto') }}</span>
+                                {% else %}
+                                    <span class="badge bg-primary">{{ _('Préstamo') }}</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ prestamo.fecha_solicitud.strftime('%d/%m/%Y') }}</td>
+                            <td>
+                                {% if prestamo.moneda %}
+                                    {{ prestamo.moneda.simbolo or prestamo.moneda.codigo }}
+                                {% endif %}
+                                {{ prestamo.monto_aprobado or prestamo.monto_solicitado }}
+                            </td>
+                            <td>{{ prestamo.cuotas_pactadas }}</td>
+                            <td>
+                                {% if prestamo.moneda %}
+                                    {{ prestamo.moneda.simbolo or prestamo.moneda.codigo }}
+                                {% endif %}
+                                {{ prestamo.saldo_pendiente }}
+                            </td>
+                            <td>
+                                {% if prestamo.estado == 'draft' %}
+                                    <span class="badge bg-secondary">{{ _('Borrador') }}</span>
+                                {% elif prestamo.estado == 'pending' %}
+                                    <span class="badge bg-warning text-dark">{{ _('Pendiente') }}</span>
+                                {% elif prestamo.estado == 'approved' %}
+                                    <span class="badge bg-success">{{ _('Aprobado') }}</span>
+                                {% elif prestamo.estado == 'applied' %}
+                                    <span class="badge bg-success">{{ _('Aplicado') }}</span>
+                                {% elif prestamo.estado == 'paid' %}
+                                    <span class="badge bg-dark">{{ _('Pagado') }}</span>
+                                {% elif prestamo.estado == 'rejected' %}
+                                    <span class="badge bg-danger">{{ _('Rechazado') }}</span>
+                                {% elif prestamo.estado == 'cancelled' %}
+                                    <span class="badge bg-secondary">{{ _('Cancelado') }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{{ url_for('prestamo.detail', prestamo_id=prestamo.id) }}" 
+                                   class="btn btn-sm btn-outline-primary" 
+                                   title="{{ _('Ver Detalle') }}">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                {% if prestamo.estado in ['draft', 'pending'] %}
+                                <a href="{{ url_for('prestamo.edit', prestamo_id=prestamo.id) }}" 
+                                   class="btn btn-sm btn-outline-secondary" 
+                                   title="{{ _('Editar') }}">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="8" class="text-center text-muted py-4">
+                                {{ _('No hay préstamos o adelantos registrados.') }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

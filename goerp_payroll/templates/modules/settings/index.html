@@ -1,0 +1,326 @@
+{#-
+SPDX-License-Identifier: Apache-2.0
+SPDX-FileCopyrightText: 2025 - 2026 BMO Soluciones, S.A.
+-#}
+
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-gear me-2"></i>{{ _('Configuración') }}</h2>
+    </div>
+
+    <div class="row">
+        {% if current_user.tipo == 'admin' %}
+        <!-- Correo y seguridad de inicio de sesión -->
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100 border-danger">
+                <div class="card-body d-flex flex-column">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-danger bg-opacity-10 rounded p-3 me-3">
+                            <i class="bi bi-envelope-lock text-danger fs-3"></i>
+                        </div>
+                        <h5 class="card-title mb-0">{{ _('Correo y seguridad') }}</h5>
+                    </div>
+                    <p class="card-text text-muted">{{ _('Configurar SMTP, recuperación y verificación de navegadores.') }}</p>
+                    <div class="mt-auto">
+                        <a href="{{ url_for('settings.email') }}" class="btn border btn-outline-danger w-100">
+                            <i class="bi bi-arrow-right-circle me-1"></i>{{ _('Configurar') }}
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Empresas -->
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body d-flex flex-column">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-primary bg-opacity-10 rounded p-3 me-3">
+                            <i class="bi bi-building text-primary fs-3"></i>
+                        </div>
+                        <h5 class="card-title mb-0">{{ _('Empresas') }}</h5>
+                    </div>
+                    <p class="card-text text-muted">{{ _('Gestionar empresas del sistema') }}</p>
+                    <div class="mt-auto">
+                        <a href="{{ url_for('empresa.index') }}" class="btn border btn-outline-primary w-100">
+                            <i class="bi bi-arrow-right-circle me-1"></i>{{ _('Acceder') }}
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Monedas -->
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body d-flex flex-column">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-success bg-opacity-10 rounded p-3 me-3">
+                            <i class="bi bi-currency-exchange text-success fs-3"></i>
+                        </div>
+                        <h5 class="card-title mb-0">{{ _('Monedas') }}</h5>
+                    </div>
+                    <p class="card-text text-muted">{{ _('Configurar monedas del sistema') }}</p>
+                    <div class="mt-auto">
+                        <a href="{{ url_for('currency.index') }}" class="btn border btn-outline-success w-100">
+                            <i class="bi bi-arrow-right-circle me-1"></i>{{ _('Acceder') }}
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tipos de Cambio -->
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body d-flex flex-column">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-info bg-opacity-10 rounded p-3 me-3">
+                            <i class="bi bi-graph-up text-info fs-3"></i>
+                        </div>
+                        <h5 class="card-title mb-0">{{ _('Tipos de Cambio') }}</h5>
+                    </div>
+                    <p class="card-text text-muted">{{ _('Administrar tipos de cambio') }}</p>
+                    <div class="mt-auto">
+                        <a href="{{ url_for('exchange_rate.index') }}" class="btn border btn-outline-info w-100">
+                            <i class="bi bi-arrow-right-circle me-1"></i>{{ _('Acceder') }}
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tipo de Planilla -->
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body d-flex flex-column">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-warning bg-opacity-10 rounded p-3 me-3">
+                            <i class="bi bi-card-list text-warning fs-3"></i>
+                        </div>
+                        <h5 class="card-title mb-0">{{ _('Tipo de Planilla') }}</h5>
+                    </div>
+                    <p class="card-text text-muted">{{ _('Configurar tipos de planilla') }}</p>
+                    <div class="mt-auto">
+                        <a href="{{ url_for('tipo_planilla.index') }}" class="btn border btn-outline-warning w-100">
+                            <i class="bi bi-arrow-right-circle me-1"></i>{{ _('Acceder') }}
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Percepciones -->
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body d-flex flex-column">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-success bg-opacity-10 rounded p-3 me-3">
+                            <i class="bi bi-plus-circle text-success fs-3"></i>
+                        </div>
+                        <h5 class="card-title mb-0">{{ _('Percepciones') }}</h5>
+                    </div>
+                    <p class="card-text text-muted">{{ _('Administrar percepciones de nómina') }}</p>
+                    <div class="mt-auto">
+                        <a href="{{ url_for('percepcion.percepcion_index') }}"
+                            class="btn border btn-outline-success w-100">
+                            <i class="bi bi-arrow-right-circle me-1"></i>{{ _('Acceder') }}
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Deducciones -->
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body d-flex flex-column">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-danger bg-opacity-10 rounded p-3 me-3">
+                            <i class="bi bi-dash-circle text-danger fs-3"></i>
+                        </div>
+                        <h5 class="card-title mb-0">{{ _('Deducciones') }}</h5>
+                    </div>
+                    <p class="card-text text-muted">{{ _('Administrar deducciones de nómina') }}</p>
+                    <div class="mt-auto">
+                        <a href="{{ url_for('deduccion.deduccion_index') }}"
+                            class="btn border btn-outline-danger w-100">
+                            <i class="bi bi-arrow-right-circle me-1"></i>{{ _('Acceder') }}
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Prestaciones -->
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body d-flex flex-column">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-primary bg-opacity-10 rounded p-3 me-3">
+                            <i class="bi bi-gift text-primary fs-3"></i>
+                        </div>
+                        <h5 class="card-title mb-0">{{ _('Prestaciones') }}</h5>
+                    </div>
+                    <p class="card-text text-muted">{{ _('Configurar prestaciones patronales') }}</p>
+                    <div class="mt-auto">
+                        <a href="{{ url_for('prestacion.prestacion_index') }}"
+                            class="btn border btn-outline-primary w-100">
+                            <i class="bi bi-arrow-right-circle me-1"></i>{{ _('Acceder') }}
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reglas de Cálculo -->
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body d-flex flex-column">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-secondary bg-opacity-10 rounded p-3 me-3">
+                            <i class="bi bi-code-square text-secondary fs-3"></i>
+                        </div>
+                        <h5 class="card-title mb-0">{{ _('Reglas de Cálculo') }}</h5>
+                    </div>
+                    <p class="card-text text-muted">{{ _('Definir reglas de cálculo') }}</p>
+                    <div class="mt-auto">
+                        <a href="{{ url_for('calculation_rule.index') }}"
+                            class="btn border btn-outline-secondary w-100">
+                            <i class="bi bi-arrow-right-circle me-1"></i>{{ _('Acceder') }}
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Campos Personalizados -->
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body d-flex flex-column">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-info bg-opacity-10 rounded p-3 me-3">
+                            <i class="bi bi-input-cursor-text text-info fs-3"></i>
+                        </div>
+                        <h5 class="card-title mb-0">{{ _('Campos Personalizados') }}</h5>
+                    </div>
+                    <p class="card-text text-muted">{{ _('Gestionar campos personalizados') }}</p>
+                    <div class="mt-auto">
+                        <a href="{{ url_for('custom_field.index') }}" class="btn border btn-outline-info w-100">
+                            <i class="bi bi-arrow-right-circle me-1"></i>{{ _('Acceder') }}
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Carga Inicial de Prestaciones -->
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body d-flex flex-column">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-warning bg-opacity-10 rounded p-3 me-3">
+                            <i class="bi bi-upload text-warning fs-3"></i>
+                        </div>
+                        <h5 class="card-title mb-0">{{ _('Carga Inicial de Prestaciones') }}</h5>
+                    </div>
+                    <p class="card-text text-muted">{{ _('Cargar prestaciones iniciales') }}</p>
+                    <div class="mt-auto">
+                        <a href="{{ url_for('carga_inicial_prestacion.index') }}"
+                            class="btn border btn-outline-warning w-100">
+                            <i class="bi bi-arrow-right-circle me-1"></i>{{ _('Acceder') }}
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% if current_user.tipo == 'admin' %}
+        <!-- Implementación Inicial -->
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body d-flex flex-column">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-primary bg-opacity-10 rounded p-3 me-3">
+                            <i class="bi bi-tools text-primary fs-3"></i>
+                        </div>
+                        <h5 class="card-title mb-0">{{ _('Implementación Inicial') }}</h5>
+                    </div>
+                    <p class="card-text text-muted">{{ _('Auxiliares para la implementación inicial del sistema') }}</p>
+                    <div class="mt-auto">
+                        <a href="{{ url_for('implementation.index') }}" class="btn border btn-outline-primary w-100">
+                            <i class="bi bi-arrow-right-circle me-1"></i>{{ _('Acceder') }}
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Parámetros de Cálculo -->
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body d-flex flex-column">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-secondary bg-opacity-10 rounded p-3 me-3">
+                            <i class="bi bi-sliders text-secondary fs-3"></i>
+                        </div>
+                        <h5 class="card-title mb-0">{{ _('Parámetros de Cálculo') }}</h5>
+                    </div>
+                    <p class="card-text text-muted">{{ _('Configurar factores base para prorrateos y cálculos') }}</p>
+                    <div class="mt-auto">
+                        <a href="{{ url_for('config_calculos.index') }}" class="btn border btn-outline-secondary w-100">
+                            <i class="bi bi-arrow-right-circle me-1"></i>{{ _('Acceder') }}
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Configuración Global -->
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body d-flex flex-column">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-dark bg-opacity-10 rounded p-3 me-3">
+                            <i class="bi bi-globe text-dark fs-3"></i>
+                        </div>
+                        <h5 class="card-title mb-0">{{ _('Configuración Global') }}</h5>
+                    </div>
+                    <p class="card-text text-muted">{{ _('Configuración general del sistema') }}</p>
+                    <div class="mt-auto">
+                        <a href="{{ url_for('configuracion.index') }}" class="btn border btn-outline-dark w-100">
+                            <i class="bi bi-arrow-right-circle me-1"></i>{{ _('Acceder') }}
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Plugins -->
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body d-flex flex-column">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-secondary bg-opacity-10 rounded p-3 me-3">
+                            <i class="bi bi-plug text-secondary fs-3"></i>
+                        </div>
+                        <h5 class="card-title mb-0">{{ _('Plugins') }}</h5>
+                    </div>
+                    <p class="card-text text-muted">{{ _('Administrar plugins instalados') }}</p>
+                    <div class="mt-auto">
+                        <a href="{{ url_for('plugins.index') }}" class="btn border btn-outline-secondary w-100">
+                            <i class="bi bi-arrow-right-circle me-1"></i>{{ _('Acceder') }}
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

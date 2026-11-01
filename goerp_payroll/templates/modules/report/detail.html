@@ -1,0 +1,134 @@
+{#-
+SPDX-License-Identifier: Apache-2.0
+SPDX-FileCopyrightText: 2025 - 2026 BMO Soluciones, S.A.
+-#}
+
+{% extends "base.html" %}
+
+{% block title %}{{ report.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h2"><i class="bi bi-file-earmark-text me-2"></i>{{ report.name }}</h1>
+        <div>
+            <a href="{{ url_for('report.execute_form', report_id=report.id) }}" class="btn btn-primary">
+                <i class="bi bi-play-fill me-1"></i>{{ _('Ejecutar') }}
+            </a>
+            <a href="{{ url_for('report.index') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i>{{ _('Volver') }}
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Report Info -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">{{ _('Información del Reporte') }}</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-3">{{ _('Nombre') }}:</dt>
+                        <dd class="col-sm-9">{{ report.name }}</dd>
+
+                        <dt class="col-sm-3">{{ _('Descripción') }}:</dt>
+                        <dd class="col-sm-9">{{ report.description or _('Sin descripción') }}</dd>
+
+                        <dt class="col-sm-3">{{ _('Tipo') }}:</dt>
+                        <dd class="col-sm-9">
+                            <span class="badge bg-{{ 'primary' if report.type == 'system' else 'info' }}">
+                                {{ _('Sistema') if report.type == 'system' else _('Personalizado') }}
+                            </span>
+                        </dd>
+
+                        <dt class="col-sm-3">{{ _('Categoría') }}:</dt>
+                        <dd class="col-sm-9">{{ report.category|capitalize if report.category else '-' }}</dd>
+
+                        <dt class="col-sm-3">{{ _('Entidad Base') }}:</dt>
+                        <dd class="col-sm-9">{{ report.base_entity }}</dd>
+
+                        <dt class="col-sm-3">{{ _('Estado') }}:</dt>
+                        <dd class="col-sm-9">
+                            <span class="badge bg-{{ 'success' if report.status == 'enabled' else 'secondary' }}">
+                                {{ _('Habilitado') if report.status == 'enabled' else _('Deshabilitado') }}
+                            </span>
+                        </dd>
+                    </dl>
+                </div>
+            </div>
+
+            <!-- Recent Executions -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">{{ _('Ejecuciones Recientes') }}</h5>
+                </div>
+                <div class="card-body">
+                    {% if executions %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>{{ _('Fecha') }}</th>
+                                    <th>{{ _('Usuario') }}</th>
+                                    <th>{{ _('Estado') }}</th>
+                                    <th>{{ _('Registros') }}</th>
+                                    <th>{{ _('Tiempo') }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for exec in executions %}
+                                <tr>
+                                    <td>{{ exec.timestamp.strftime('%Y-%m-%d %H:%M') if exec.timestamp else exec.creado.strftime('%Y-%m-%d') }}</td>
+                                    <td>{{ exec.executed_by }}</td>
+                                    <td>
+                                        <span class="badge bg-{{ 'success' if exec.status == 'completed' else 'danger' if exec.status == 'failed' else 'warning' }}">
+                                            {{ exec.status }}
+                                        </span>
+                                    </td>
+                                    <td>{{ exec.row_count or '-' }}</td>
+                                    <td>{{ exec.execution_time_ms or '-' }} ms</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted">{{ _('No hay ejecuciones registradas.') }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            {% if metadata %}
+            <!-- Parameters Info -->
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h5 class="mb-0">{{ _('Parámetros') }}</h5>
+                </div>
+                <div class="card-body">
+                    {% if metadata.parameters %}
+                    <ul class="list-unstyled mb-0">
+                        {% for param in metadata.parameters %}
+                        <li class="mb-2">
+                            <strong>{{ param.name|replace('_', ' ')|title }}</strong>
+                            <br>
+                            <small class="text-muted">
+                                {{ _('Tipo') }}: {{ param.type }}
+                                {% if param.required %}<span class="text-danger">({{ _('Requerido') }})</span>{% endif %}
+                            </small>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <p class="text-muted mb-0">{{ _('Sin parámetros') }}</p>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

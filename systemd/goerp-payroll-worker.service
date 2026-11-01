@@ -1,0 +1,73 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: 2025 - 2026 BMO Soluciones, S.A.
+#
+# GoERP Payroll - Dramatiq Worker Service
+#
+# This systemd unit file manages the Dramatiq background worker for processing
+# payroll calculations asynchronously. This service is REQUIRED when QUEUE_ENABLED=1
+# and background processing is configured.
+#
+# Installation:
+#   1. Copy this file to /etc/systemd/system/goerp-payroll-worker.service
+#   2. Edit the Environment variables below to match your deployment (must match main service)
+#   3. Run: sudo systemctl daemon-reload
+#   4. Run: sudo systemctl enable goerp-payroll-worker
+#   5. Run: sudo systemctl start goerp-payroll-worker
+#
+# Usage:
+#   - Start:   sudo systemctl start goerp-payroll-worker
+#   - Stop:    sudo systemctl stop goerp-payroll-worker
+#   - Restart: sudo systemctl restart goerp-payroll-worker
+#   - Status:  sudo systemctl status goerp-payroll-worker
+#   - Logs:    sudo journalctl -u goerp-payroll-worker -f
+#
+# Note: This service should be started BEFORE the main application to ensure
+#       background jobs can be processed immediately.
+
+[Unit]
+Description=GoERP Payroll Dramatiq Worker
+Documentation=https://github.com/williamjmorenor/coati-payroll
+After=network.target redis.service
+Before=goerp-payroll.service
+Requires=redis.service
+
+[Service]
+Type=simple
+User=coati
+Group=coati
+WorkingDirectory=/home/coati/goerp-payroll
+
+# Path to Python virtual environment
+Environment="PATH=/home/coati/goerp-payroll/venv/bin"
+
+# Database configuration (same as main service)
+Environment="DATABASE_URL=postgresql://coati_user:CHANGE_ME@localhost:5432/coati_db"
+
+# Redis configuration (REQUIRED for Dramatiq)
+Environment="REDIS_URL=redis://localhost:6379/0"
+
+# Queue system configuration
+Environment="QUEUE_ENABLED=1"
+
+# Worker configuration (adjust based on server capacity)
+Environment="DRAMATIQ_WORKER_THREADS=8"
+Environment="DRAMATIQ_WORKER_PROCESSES=2"
+
+# Start the Dramatiq worker
+ExecStart=/home/coati/goerp-payroll/venv/bin/dramatiq goerp_payroll.queue.tasks --threads 8 --processes 2
+
+# Restart policy
+Restart=always
+RestartSec=10
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=goerp-payroll-worker
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,369 @@
+# SPDX-License-Identifier: Apache-2.0
+"""Regulatory edge-case validations for jurisdiction JSON rules.
+
+These tests intentionally target boundary and non-happy-path scenarios
+for tax lookup and capped deductions defined in jurisdiction profiles.
+"""
+
+from __future__ import annotations
+
+import json
+from datetime import date
+from decimal import Decimal, ROUND_HALF_UP
+from pathlib import Path
+
+import pytest
+
+from goerp_payroll.formula_engine import CalculationError, FormulaEngine
+
+pytestmark = pytest.mark.release_validation
+ROOT = Path(__file__).parents[1]
+
+
+def _load_profile(filename: str) -> dict:
+    return json.loads((ROOT / "goerp_payroll" / "jurisdictions" / filename).read_text(encoding="utf-8"))
+
+
+def _reject_duplicate_json_keys(pairs: list[tuple[str, object]]) -> dict:
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise AssertionError(f"duplicate JSON key: {key}")
+        result[key] = value
+    return result
+
+
+def _q2(value: Decimal) -> Decimal:
+    return value.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+
+def _mx_isr_manual(salary: Decimal, tariff: list[dict]) -> Decimal:
+    for row in tariff:
+        min_v = Decimal(str(row["min"]))
+        max_raw = row.get("max")
+        max_v = None if max_raw is None else Decimal(str(max_raw))
+        if salary >= min_v and (max_v is None or salary <= max_v):
+            fixed = Decimal(str(row["fixed"]))
+            rate = Decimal(str(row["rate"]))
+            over = Decimal(str(row["over"]))
+            return _q2(fixed + (salary - over) * rate)
+    raise ValueError("No matching tax bracket for salary")
+
+
+def _us_ss_manual(salary: Decimal, accumulated: Decimal, wage_base: Decimal, rate: Decimal) -> Decimal:
+    remaining = max(Decimal("0.00"), wage_base - accumulated)
+    taxable = min(salary, remaining)
+    return _q2(taxable * rate)
+
+
+def test_jurisdiction_profiles_have_no_duplicate_json_keys():
+    for path in (ROOT / "goerp_payroll" / "jurisdictions").glob("*.json"):
+        json.loads(path.read_text(encoding="utf-8"), object_pairs_hook=_reject_duplicate_json_keys)
+
+
+def test_release_accumulations_are_isolated_between_companies(app, db_session):
+    """Fiscal accumulations must not leak between same-shaped company profiles."""
+    from goerp_payroll.model import Empleado, Empresa, Moneda, TipoPlanilla
+    from goerp_payroll.nomina_engine.repositories.acumulado_repository import AcumuladoRepository
+
+    with app.app_context():
+        currency = Moneda(codigo="ISO-USD", nombre="Dollar", simbolo="$", activo=True)
+        company_a = Empresa(codigo="ISO-A", razon_social="Isolation A", ruc="ISO-A")
+        company_b = Empresa(codigo="ISO-B", razon_social="Isolation B", ruc="ISO-B")
+        payroll_type = TipoPlanilla(
+            codigo="ISO-MONTHLY",
+            descripcion="Isolation monthly",
+            periodicidad="monthly",
+            dias=30,
+            periodos_por_anio=12,
+            mes_inicio_fiscal=1,
+            dia_inicio_fiscal=1,
+        )
+        db_session.add_all([currency, company_a, company_b, payroll_type])
+        db_session.flush()
+        employee_a = Empleado(
+            codigo_empleado="ISO-EMP-A",
+            primer_nombre="A",
+            primer_apellido="Employee",
+            identificacion_personal="ISO-A-EMP",
+            fecha_alta=date(2026, 1, 1),
+            salario_base=Decimal("30000.00"),
+            moneda_id=currency.id,
+            empresa_id=company_a.id,
+            activo=True,
+        )
+        employee_b = Empleado(
+            codigo_empleado="ISO-EMP-B",
+            primer_nombre="B",
+            primer_apellido="Employee",
+            identificacion_personal="ISO-B-EMP",
+            fecha_alta=date(2026, 1, 1),
+            salario_base=Decimal("30000.00"),
+            moneda_id=currency.id,
+            empresa_id=company_b.id,
+            activo=True,
+        )
+        db_session.add_all([employee_a, employee_b])
+        db_session.flush()
+
+        repository = AcumuladoRepository(db_session)
+        accumulation_a = repository.get_or_create(
+            empleado=employee_a,
+            tipo_planilla_id=payroll_type.id,
+            empresa_id=company_a.id,
+            periodo_fiscal_inicio=date(2026, 1, 1),
+            periodo_inicio=date(2026, 1, 1),
+            empresa_primer_mes_nomina=1,
+            empresa_primer_anio_nomina=2026,
+        )
+        accumulation_b = repository.get_or_create(
+            empleado=employee_b,
+            tipo_planilla_id=payroll_type.id,
+            empresa_id=company_b.id,
+            periodo_fiscal_inicio=date(2026, 1, 1),
+            periodo_inicio=date(2026, 1, 1),
+            empresa_primer_mes_nomina=1,
+            empresa_primer_anio_nomina=2026,
+        )
+
+        accumulation_a.salario_bruto_acumulado = Decimal("30000.00")
+        accumulation_a.impuesto_retenido_acumulado = Decimal("1545.30")
+        db_session.flush()
+
+        assert accumulation_a.id != accumulation_b.id
+        assert accumulation_a.empresa_id == company_a.id
+        assert accumulation_b.empresa_id == company_b.id
+        assert accumulation_b.salario_bruto_acumulado == Decimal("0.00")
+        assert accumulation_b.impuesto_retenido_acumulado == Decimal("0.00")
+
+
+def _india_annual_tax_manual(annual_taxable: Decimal, slabs: list[dict]) -> Decimal:
+    for row in slabs:
+        min_v = Decimal(str(row["min"]))
+        max_raw = row.get("max")
+        max_v = None if max_raw is None else Decimal(str(max_raw))
+        if annual_taxable >= min_v and (max_v is None or annual_taxable <= max_v):
+            fixed = Decimal(str(row["fixed"]))
+            rate = Decimal(str(row["rate"]))
+            over = Decimal(str(row["over"]))
+            return _q2(fixed + (annual_taxable - over) * rate)
+    raise ValueError("No matching annual slab")
+
+
+def test_us_social_security_wage_base_crossing_uses_remaining_base_only():
+    profile = _load_profile("us_2026.json")
+    schema = profile["rules"]["social_security_employee"]["formula"]
+    engine = FormulaEngine(schema)
+
+    near_cap = engine.execute({"salario_bruto": "1000.00", "salario_acumulado": "184000.00"})
+    assert near_cap["output"] == "31.00"
+
+    at_cap = engine.execute({"salario_bruto": "1000.00", "salario_acumulado": "184500.00"})
+    assert at_cap["output"] == "0.00"
+
+
+def test_mexico_isr_table_is_continuous_at_7168_boundary():
+    profile = _load_profile("mexico_2026.json")
+    schema = profile["rules"]["income_tax"]["formula"]
+    engine = FormulaEngine(schema)
+
+    left = engine.execute({"salario_bruto": "7168.51", "employment_subsidy": "0"})
+    right = engine.execute({"salario_bruto": "7168.52", "employment_subsidy": "0"})
+
+    assert left["output"] == "420.95"
+    assert right["output"] == "420.95"
+
+
+def test_india_annual_slab_transition_is_continuous_at_800000_boundary():
+    profile = _load_profile("india_2026_27.json")
+    annual_slabs = profile["rules"]["income_tax"]["formula"]["tax_tables"]["annual_slabs"]
+    schema = {
+        "inputs": [{"name": "annual_taxable", "type": "decimal", "default": 0}],
+        "steps": [{"name": "annual_tax", "type": "tax_lookup", "table": "annual_slabs", "input": "annual_taxable"}],
+        "tax_tables": {"annual_slabs": annual_slabs},
+        "output": "annual_tax",
+    }
+    engine = FormulaEngine(schema)
+
+    left = engine.execute({"annual_taxable": "800000.00"})
+    right = engine.execute({"annual_taxable": "800000.01"})
+
+    assert left["output"] == "20000.00"
+    assert right["output"] == "20000.00"
+
+
+def test_mexico_negative_income_raises_no_bracket_error():
+    profile = _load_profile("mexico_2026.json")
+    schema = profile["rules"]["income_tax"]["formula"]
+    engine = FormulaEngine(schema)
+
+    with pytest.raises(CalculationError, match="No tax bracket"):
+        engine.execute({"salario_bruto": "-1.00"})
+
+
+def test_brazil_inss_above_ceiling_must_use_capped_contribution_amount():
+    profile = _load_profile("brazil_2026.json")
+    schema = profile["rules"]["inss_employee"]["formula"]
+    engine = FormulaEngine(schema)
+
+    # Legal behavior: contribution should be capped at the ceiling amount when
+    # salary exceeds the INSS top base, not fail due to missing bracket.
+    # Max bracket amount = 411.1122 + (8475.55 - 4354.27) * 0.14 = 988.09.
+    result = engine.execute({"salario_bruto": "9000.00"})
+    assert Decimal(result["output"]) == Decimal("988.09")
+
+
+@pytest.mark.parametrize(
+    "salary,expected",
+    [
+        ("10000.00", "729.02"),
+        ("12598.02", "1011.68"),
+        ("12598.03", "1011.68"),
+    ],
+)
+def test_mexico_manual_expected_matches_engine(salary: str, expected: str):
+    profile = _load_profile("mexico_2026.json")
+    schema = profile["rules"]["income_tax"]["formula"]
+    tariff = schema["tax_tables"]["monthly_tariff"]
+    engine = FormulaEngine(schema)
+
+    salary_d = Decimal(salary)
+    manual_expected = _mx_isr_manual(salary_d, tariff)
+    assert manual_expected == Decimal(expected)
+
+    engine_result = Decimal(engine.execute({"salario_bruto": salary, "employment_subsidy": "0"})["output"])
+    assert engine_result == manual_expected
+
+
+@pytest.mark.parametrize(
+    "salary,accumulated,expected",
+    [
+        ("1000.00", "184000.00", "31.00"),
+        ("0.02", "184499.99", "0.00"),
+        ("1000.00", "184500.00", "0.00"),
+    ],
+)
+def test_us_social_security_manual_expected_matches_engine(salary: str, accumulated: str, expected: str):
+    profile = _load_profile("us_2026.json")
+    schema = profile["rules"]["social_security_employee"]["formula"]
+    engine = FormulaEngine(schema)
+
+    inputs_by_name = {item["name"]: item for item in schema["inputs"]}
+    wage_base = Decimal(str(inputs_by_name["wage_base"]["default"]))
+    rate = Decimal(str(inputs_by_name["employee_rate"]["default"]))
+    manual_expected = _us_ss_manual(Decimal(salary), Decimal(accumulated), wage_base, rate)
+    assert manual_expected == Decimal(expected)
+
+    engine_result = Decimal(engine.execute({"salario_bruto": salary, "salario_acumulado": accumulated})["output"])
+    assert engine_result == manual_expected
+
+
+@pytest.mark.parametrize(
+    "annual_taxable,expected",
+    [
+        ("400000.00", "0.00"),
+        ("800000.00", "20000.00"),
+        ("1200000.00", "60000.00"),
+        ("2400000.00", "300000.00"),
+    ],
+)
+def test_india_annual_tax_manual_expected_matches_engine(annual_taxable: str, expected: str):
+    profile = _load_profile("india_2026_27.json")
+    annual_slabs = profile["rules"]["income_tax"]["formula"]["tax_tables"]["annual_slabs"]
+    schema = {
+        "inputs": [{"name": "annual_taxable", "type": "decimal", "default": 0}],
+        "steps": [{"name": "annual_tax", "type": "tax_lookup", "table": "annual_slabs", "input": "annual_taxable"}],
+        "tax_tables": {"annual_slabs": annual_slabs},
+        "output": "annual_tax",
+    }
+    engine = FormulaEngine(schema)
+
+    manual_expected = _india_annual_tax_manual(Decimal(annual_taxable), annual_slabs)
+    assert manual_expected == Decimal(expected)
+
+    engine_result = Decimal(engine.execute({"annual_taxable": annual_taxable})["output"])
+    assert engine_result == manual_expected
+
+
+def test_us_profile_must_include_federal_income_withholding_rule():
+    profile = _load_profile("us_2026.json")
+    rules = profile["rules"]
+
+    # Compliance expectation: US payroll validation scope must include federal
+    # income tax withholding (W-4 / Publication 15-T), not only FICA.
+    assert "federal_income_tax" in rules
+
+
+def test_mexico_profile_must_include_imss_and_infonavit_employee_rules():
+    profile = _load_profile("mexico_2026.json")
+    rules = profile["rules"]
+
+    # Compliance expectation: Mexico payroll profile must include employee-side
+    # IMSS and INFONAVIT calculations in addition to ISR.
+    assert "imss_employee" in rules
+    assert "infonavit_employee" in rules
+
+
+def test_india_profile_must_include_esi_employee_rule():
+    profile = _load_profile("india_2026_27.json")
+    rules = profile["rules"]
+
+    # Compliance expectation: India payroll profile should include ESI when the
+    # validation issue scope explicitly references EPF/ESI.
+    assert "esi_employee" in rules
+
+
+def test_central_america_profiles_must_support_partial_year_annualization():
+    profiles = _load_profile("central_america_2026.json")
+
+    # Compliance expectation: annual tax projection for payroll must support
+    # partial-year employment (meses_restantes), not a fixed 12-month default.
+    for country in ["GT", "HN", "NI", "PA", "BZ"]:
+        rules = profiles["countries"][country]["rules"]
+        tax_rule = next(rule for rule in rules.values() if rule["type"] == "tax")
+        input_names = {item["name"] for item in tax_rule["formula"]["inputs"]}
+        assert "meses_restantes" in input_names
+
+
+def test_costa_rica_income_tax_must_use_taxable_salary_after_ccss():
+    profiles = _load_profile("central_america_2026.json")
+    cr = profiles["countries"]["CR"]
+    ccss_rule = cr["rules"]["ccss_employee"]
+    income_tax_rule = cr["rules"]["income_tax"]
+
+    salary = Decimal("1000000.00")
+    ccss_rate = Decimal(str(ccss_rule["formula"]["inputs"][1]["default"]))
+    ccss_employee = _q2(salary * ccss_rate)
+    taxable_salary = salary - ccss_employee
+
+    # If tax base uses salary after CCSS, this case should stay in the 0% bracket.
+    assert taxable_salary == Decimal("901700.00")
+    manual_expected_tax = Decimal("0.00")
+
+    engine = FormulaEngine(income_tax_rule["formula"])
+    engine_result = Decimal(engine.execute({"salario_bruto": str(salary), "decimo_tercer_mes": "0"})["output"])
+    assert engine_result == manual_expected_tax
+
+
+def test_panama_income_tax_must_consider_pre_tax_social_contributions():
+    profiles = _load_profile("central_america_2026.json")
+    pa = profiles["countries"]["PA"]
+    css_rule = pa["rules"]["css_employee"]
+    educational_rule = pa["rules"]["educational_employee"]
+    income_tax_rule = pa["rules"]["income_tax"]
+
+    salary = Decimal("2000.00")
+    annual_months = Decimal("12")
+    css_rate = Decimal(str(css_rule["formula"]["inputs"][1]["default"]))
+    educational_rate = Decimal(str(educational_rule["formula"]["inputs"][1]["default"]))
+
+    monthly_pre_tax = _q2(salary * css_rate) + _q2(salary * educational_rate)
+    annual_taxable = (salary - monthly_pre_tax) * annual_months
+    # Annual tax per configured table with deductions included in tax base.
+    annual_tax = _q2((annual_taxable - Decimal("11000.00")) * Decimal("0.15"))
+    manual_expected_monthly_tax = _q2(annual_tax / annual_months)
+    assert manual_expected_monthly_tax == Decimal("129.50")
+
+    engine = FormulaEngine(income_tax_rule["formula"])
+    engine_result = Decimal(engine.execute({"salario_bruto": str(salary), "decimo_tercer_mes": "0"})["output"])
+    assert engine_result == manual_expected_monthly_tax

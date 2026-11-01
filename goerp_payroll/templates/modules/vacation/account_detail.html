@@ -1,0 +1,152 @@
+{#-
+SPDX-License-Identifier: Apache-2.0
+SPDX-FileCopyrightText: 2025 - 2026 BMO Soluciones, S.A.
+-#}
+
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>{{ _('Cuenta de Vacaciones') }} - {{ account.empleado.primer_nombre }} {{ account.empleado.primer_apellido }}</h2>
+        <a href="{{ url_for('vacation.account_index') }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left me-1"></i>{{ _('Volver') }}
+        </a>
+    </div>
+
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">{{ _('Balance Actual') }}</h5>
+                </div>
+                <div class="card-body text-center">
+                    <h1 class="display-3">{{ account.current_balance }}</h1>
+                    <p class="text-muted">{{ account.policy.unit_type }}</p>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">{{ _('Información de la Cuenta') }}</h5>
+                </div>
+                <div class="card-body">
+                    <dl>
+                        <dt>{{ _('Empleado') }}</dt>
+                        <dd>{{ account.empleado.primer_nombre }} {{ account.empleado.primer_apellido }}</dd>
+                        
+                        <dt>{{ _('Código') }}</dt>
+                        <dd><strong>{{ account.empleado.codigo_empleado }}</strong></dd>
+                        
+                        <dt>{{ _('Política') }}</dt>
+                        <dd>
+                            <a href="{{ url_for('vacation.policy_detail', policy_id=account.policy.id) }}">
+                                {{ account.policy.nombre }}
+                            </a>
+                        </dd>
+                        
+                        <dt>{{ _('Última Acumulación') }}</dt>
+                        <dd>{{ account.last_accrual_date.strftime('%Y-%m-%d') if account.last_accrual_date else '-' }}</dd>
+                        
+                        <dt>{{ _('Estado') }}</dt>
+                        <dd>
+                            {% if account.activo %}
+                                <span class="badge bg-success">{{ _('Activa') }}</span>
+                            {% else %}
+                                <span class="badge bg-warning">{{ _('Inactiva') }}</span>
+                            {% endif %}
+                        </dd>
+                    </dl>
+                </div>
+            </div>
+
+            {% if pending_requests %}
+            <div class="card mb-4">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">{{ _('Solicitudes Pendientes') }}</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group">
+                        {% for request in pending_requests %}
+                        <li class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>{{ request.start_date.strftime('%Y-%m-%d') }}</strong> al
+                                    <strong>{{ request.end_date.strftime('%Y-%m-%d') }}</strong>
+                                    <br>
+                                    <small>{{ request.units }} {{ account.policy.unit_type }}</small>
+                                </div>
+                                <a href="{{ url_for('vacation.leave_request_detail', request_id=request.id) }}" 
+                                   class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                            </div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">{{ _('Historial de Movimientos') }}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>{{ _('Fecha') }}</th>
+                                    <th>{{ _('Tipo') }}</th>
+                                    <th>{{ _('Cantidad') }}</th>
+                                    <th>{{ _('Balance Después') }}</th>
+                                    <th>{{ _('Origen') }}</th>
+                                    <th>{{ _('Observaciones') }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for entry in ledger_entries %}
+                                <tr>
+                                    <td>{{ entry.fecha.strftime('%Y-%m-%d') }}</td>
+                                    <td>
+                                        {% if entry.entry_type == 'accrual' %}
+                                            <span class="badge bg-success">{{ _('Acumulación') }}</span>
+                                        {% elif entry.entry_type == 'usage' %}
+                                            <span class="badge bg-info">{{ _('Uso') }}</span>
+                                        {% elif entry.entry_type == 'adjustment' %}
+                                            <span class="badge bg-warning">{{ _('Ajuste') }}</span>
+                                        {% elif entry.entry_type == 'expiration' %}
+                                            <span class="badge bg-danger">{{ _('Vencimiento') }}</span>
+                                        {% elif entry.entry_type == 'payout' %}
+                                            <span class="badge bg-secondary">{{ _('Pago') }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if entry.quantity >= 0 %}
+                                            <span class="text-success">+{{ entry.quantity }}</span>
+                                        {% else %}
+                                            <span class="text-danger">{{ entry.quantity }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ entry.balance_after }}</td>
+                                    <td>{{ entry.source }}</td>
+                                    <td>{{ entry.observaciones or '-' }}</td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted">{{ _('No hay movimientos registrados.') }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

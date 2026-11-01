@@ -1,0 +1,159 @@
+{#-
+SPDX-License-Identifier: Apache-2.0
+SPDX-FileCopyrightText: 2025 - 2026 BMO Soluciones, S.A.
+-#}
+
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            <i class="bi bi-check-circle me-2"></i>
+            {{ _('Aprobar/Rechazar Préstamo') }}
+        </h2>
+        <a href="{{ url_for('prestamo.detail', prestamo_id=prestamo.id) }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i>{{ _('Volver') }}
+        </a>
+    </div>
+
+    <!-- Loan Summary -->
+    <div class="card mb-4">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0">{{ _('Información del Préstamo') }}</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>{{ _('Empleado:') }}</strong> {{ prestamo.empleado.primer_nombre }} {{ prestamo.empleado.primer_apellido }}</p>
+                    <p><strong>{{ _('Código:') }}</strong> {{ prestamo.empleado.codigo_empleado }}</p>
+                    <p><strong>{{ _('Tipo:') }}</strong> 
+                        {% if prestamo.tipo == 'advance' %}
+                            {{ _('Adelanto de Salario') }}
+                        {% else %}
+                            {{ _('Préstamo') }}
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>{{ _('Monto Solicitado:') }}</strong> 
+                        {% if prestamo.moneda %}
+                            {{ prestamo.moneda.simbolo or prestamo.moneda.codigo }}
+                        {% endif %}
+                        {{ "{:,.2f}".format(prestamo.monto_solicitado) }}
+                    </p>
+                    <p><strong>{{ _('Cuotas:') }}</strong> {{ prestamo.cuotas_pactadas }}</p>
+                    <p><strong>{{ _('Fecha de Solicitud:') }}</strong> {{ prestamo.fecha_solicitud.strftime('%d/%m/%Y') }}</p>
+                </div>
+            </div>
+            {% if prestamo.motivo %}
+            <div class="row">
+                <div class="col-12">
+                    <p><strong>{{ _('Motivo:') }}</strong> {{ prestamo.motivo }}</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Approval Form -->
+    <div class="card">
+        <div class="card-body">
+            <form method="POST" novalidate>
+                {{ form.hidden_tag() }}
+                
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <label for="{{ form.monto_aprobado.id }}" class="form-label">
+                            {{ form.monto_aprobado.label.text }} <span class="text-danger">*</span>
+                        </label>
+                        {{ form.monto_aprobado(class="form-control" + (" is-invalid" if form.monto_aprobado.errors else "")) }}
+                        {% if form.monto_aprobado.errors %}
+                            <div class="invalid-feedback">{{ form.monto_aprobado.errors[0] }}</div>
+                        {% endif %}
+                        {% if form.monto_aprobado.description %}
+                            <div class="form-text">{{ form.monto_aprobado.description }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <label for="{{ form.fecha_aprobacion.id }}" class="form-label">
+                            {{ form.fecha_aprobacion.label.text }} <span class="text-danger">*</span>
+                        </label>
+                        {{ form.fecha_aprobacion(class="form-control" + (" is-invalid" if form.fecha_aprobacion.errors else "")) }}
+                        {% if form.fecha_aprobacion.errors %}
+                            <div class="invalid-feedback">{{ form.fecha_aprobacion.errors[0] }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <label for="{{ form.fecha_desembolso.id }}" class="form-label">
+                            {{ form.fecha_desembolso.label.text }}
+                        </label>
+                        {{ form.fecha_desembolso(class="form-control" + (" is-invalid" if form.fecha_desembolso.errors else "")) }}
+                        {% if form.fecha_desembolso.errors %}
+                            <div class="invalid-feedback">{{ form.fecha_desembolso.errors[0] }}</div>
+                        {% endif %}
+                        {% if form.fecha_desembolso.description %}
+                            <div class="form-text">{{ form.fecha_desembolso.description }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="{{ form.monto_por_cuota.id }}" class="form-label">
+                            {{ form.monto_por_cuota.label.text }}
+                        </label>
+                        {{ form.monto_por_cuota(class="form-control" + (" is-invalid" if form.monto_por_cuota.errors else ""), readonly=true) }}
+                        {% if form.monto_por_cuota.errors %}
+                            <div class="invalid-feedback">{{ form.monto_por_cuota.errors[0] }}</div>
+                        {% endif %}
+                        {% if form.monto_por_cuota.description %}
+                            <div class="form-text">{{ form.monto_por_cuota.description }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Rejection Section -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <label for="{{ form.motivo_rechazo.id }}" class="form-label">
+                            {{ form.motivo_rechazo.label.text }}
+                        </label>
+                        {{ form.motivo_rechazo(class="form-control" + (" is-invalid" if form.motivo_rechazo.errors else ""), rows=3) }}
+                        {% if form.motivo_rechazo.errors %}
+                            <div class="invalid-feedback">{{ form.motivo_rechazo.errors[0] }}</div>
+                        {% endif %}
+                        {% if form.motivo_rechazo.description %}
+                            <div class="form-text">{{ form.motivo_rechazo.description }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end gap-2">
+                    <a href="{{ url_for('prestamo.detail', prestamo_id=prestamo.id) }}" class="btn btn-secondary">
+                        {{ _('Cancelar') }}
+                    </a>
+                    {{ form.rechazar(class="btn btn-danger", onclick="return confirm('" + _('¿Está seguro de rechazar este préstamo?') + "');") }}
+                    {{ form.aprobar(class="btn btn-success") }}
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Auto-calculate installment amount
+        document.getElementById('{{ form.monto_aprobado.id }}').addEventListener('input', function() {
+            const monto = parseFloat(this.value) || 0;
+            const cuotas = {{ prestamo.cuotas_pactadas }};
+            const montoCuota = cuotas > 0 ? (monto / cuotas).toFixed(2) : 0;
+            document.getElementById('{{ form.monto_por_cuota.id }}').value = montoCuota;
+        });
+        
+        // Trigger calculation on page load
+        document.getElementById('{{ form.monto_aprobado.id }}').dispatchEvent(new Event('input'));
+    </script>
+</div>
+{% endblock %}

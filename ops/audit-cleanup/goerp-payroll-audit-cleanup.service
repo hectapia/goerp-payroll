@@ -1,0 +1,9 @@
+[Unit]
+Description=GoERP Payroll audit retention cleanup
+
+[Service]
+Type=oneshot
+User=goerp-payroll
+WorkingDirectory=/opt/goerp-payroll
+EnvironmentFile=-/etc/goerp-payroll/audit.env
+ExecStart=/usr/local/bin/payrollctl maintenance cleanup-audit

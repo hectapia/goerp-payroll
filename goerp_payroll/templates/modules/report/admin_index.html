@@ -1,0 +1,130 @@
+{#-
+SPDX-License-Identifier: Apache-2.0
+SPDX-FileCopyrightText: 2025 - 2026 BMO Soluciones, S.A.
+-#}
+
+{% extends "base.html" %}
+{% from "macros.html" import render_pagination %}
+
+{% block title %}{{ _('Administración de Reportes') }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h2"><i class="bi bi-gear me-2"></i>{{ _('Administración de Reportes') }}</h1>
+        <a href="{{ url_for('report.index') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i>{{ _('Volver a Reportes') }}
+        </a>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label for="category" class="form-label">{{ _('Categoría') }}</label>
+                    <select name="category" id="category" class="form-select">
+                        <option value="">{{ _('Todas') }}</option>
+                        {% for cat in categories %}
+                        <option value="{{ cat }}" {% if cat == current_category %}selected{% endif %}>
+                            {{ cat|capitalize }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="type" class="form-label">{{ _('Tipo') }}</label>
+                    <select name="type" id="type" class="form-select">
+                        <option value="">{{ _('Todos') }}</option>
+                        <option value="system" {% if current_type == 'system' %}selected{% endif %}>{{ _('Sistema') }}</option>
+                        <option value="custom" {% if current_type == 'custom' %}selected{% endif %}>{{ _('Personalizado') }}</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="status" class="form-label">{{ _('Estado') }}</label>
+                    <select name="status" id="status" class="form-select">
+                        <option value="">{{ _('Todos') }}</option>
+                        <option value="enabled" {% if current_status == 'enabled' %}selected{% endif %}>{{ _('Habilitado') }}</option>
+                        <option value="disabled" {% if current_status == 'disabled' %}selected{% endif %}>{{ _('Deshabilitado') }}</option>
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-funnel me-1"></i>{{ _('Filtrar') }}
+                    </button>
+                    <a href="{{ url_for('report.admin_index') }}" class="btn btn-outline-secondary ms-2">
+                        <i class="bi bi-x-circle me-1"></i>{{ _('Limpiar') }}
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Reports Table -->
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>{{ _('Nombre') }}</th>
+                            <th>{{ _('Tipo') }}</th>
+                            <th>{{ _('Categoría') }}</th>
+                            <th>{{ _('Base') }}</th>
+                            <th>{{ _('Estado') }}</th>
+                            <th>{{ _('Acciones') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for report in reports %}
+                        <tr>
+                            <td>
+                                <strong>{{ report.name }}</strong>
+                                <br>
+                                <small class="text-muted">{{ report.description or _('Sin descripción') }}</small>
+                            </td>
+                            <td>
+                                <span class="badge bg-{{ 'primary' if report.type == 'system' else 'info' }}">
+                                    {{ _('Sistema') if report.type == 'system' else _('Personalizado') }}
+                                </span>
+                            </td>
+                            <td>{{ report.category|capitalize if report.category else '-' }}</td>
+                            <td>{{ report.base_entity }}</td>
+                            <td>
+                                <span class="badge bg-{{ 'success' if report.status == 'enabled' else 'secondary' }}">
+                                    {{ _('Habilitado') if report.status == 'enabled' else _('Deshabilitado') }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <a href="{{ url_for('report.detail', report_id=report.id) }}" class="btn btn-outline-primary" title="{{ _('Ver detalles') }}">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <a href="{{ url_for('report.permissions_form', report_id=report.id) }}" class="btn btn-outline-secondary" title="{{ _('Permisos') }}">
+                                        <i class="bi bi-shield-lock"></i>
+                                    </a>
+                                    <form method="post" action="{{ url_for('report.toggle_status', report_id=report.id) }}" class="d-inline">
+                                        <button type="submit" class="btn btn-outline-{{ 'danger' if report.status == 'enabled' else 'success' }}" title="{{ _('Cambiar estado') }}">
+                                            <i class="bi bi-{{ 'toggle-off' if report.status == 'enabled' else 'toggle-on' }}"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted">
+                                {{ _('No hay reportes disponibles.') }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    {{ render_pagination(pagination, 'report.admin_index') }}
+</div>
+{% endblock %}

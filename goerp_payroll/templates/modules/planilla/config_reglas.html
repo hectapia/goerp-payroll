@@ -1,0 +1,116 @@
+{#-
+SPDX-License-Identifier: Apache-2.0
+SPDX-FileCopyrightText: 2025 - 2026 BMO Soluciones, S.A.
+-#}
+
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            <i class="bi bi-code-square me-2"></i>
+            {{ _('Reglas de Cálculo') }} - {{ planilla.nombre }}
+        </h2>
+        <a href="{{ url_for('planilla.config', planilla_id=planilla.id) }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i>{{ _('Volver a Configuración') }}
+        </a>
+    </div>
+
+    <div class="alert alert-info">
+        <i class="bi bi-info-circle me-2"></i>
+        {{ _('Las reglas de cálculo definen fórmulas complejas como IR, INSS, etc.') }}
+    </div>
+
+    <div class="row">
+        <!-- Add Rule Form -->
+        <div class="col-lg-4 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-coaty-light">
+                    <h5 class="mb-0"><i class="bi bi-plus-circle me-2"></i>{{ _('Agregar Regla') }}</h5>
+                </div>
+                <div class="card-body">
+                    <form action="{{ url_for('planilla.add_regla', planilla_id=planilla.id) }}" method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <div class="mb-3">
+                            <label class="form-label">{{ _('Regla de Cálculo') }}</label>
+                            <select name="regla_calculo_id" class="form-select" required>
+                                <option value="">{{ _('-- Seleccionar Regla de Cálculo --') }}</option>
+                                {% for regla in reglas_disponibles %}
+                                    {% set is_assigned = regla.id in (reglas_asignadas | map(attribute='regla_calculo_id') | list) %}
+                                    {% if not is_assigned %}
+                                    <option value="{{ regla.id }}">{{ regla.codigo }} v{{ regla.version }} - {{ regla.nombre }}</option>
+                                    {% endif %}
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">{{ _('Orden') }}</label>
+                            <input type="number" name="orden" class="form-control" value="0" min="0">
+                            <div class="form-text">{{ _('Orden de ejecución de la regla') }}</div>
+                        </div>
+                        <button type="submit" class="btn btn-coaty w-100">
+                            <i class="bi bi-plus me-1"></i>{{ _('Agregar Regla') }}
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Rules List -->
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-coaty-light d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="bi bi-list-ul me-2"></i>{{ _('Reglas Asignadas') }}
+                        <span class="badge bg-warning text-dark ms-2">{{ reglas_asignadas | length }}</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if reglas_asignadas %}
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>{{ _('Orden') }}</th>
+                                    <th>{{ _('Código') }}</th>
+                                    <th>{{ _('Nombre') }}</th>
+                                    <th>{{ _('Tipo') }}</th>
+                                    <th>{{ _('Versión') }}</th>
+                                    <th class="text-end">{{ _('Acciones') }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for assoc in reglas_asignadas %}
+                                <tr>
+                                    <td>{{ assoc.orden }}</td>
+                                    <td><code>{{ assoc.regla_calculo.codigo }}</code></td>
+                                    <td>{{ assoc.regla_calculo.nombre }}</td>
+                                    <td><small class="text-muted">{{ assoc.regla_calculo.tipo_regla }}</small></td>
+                                    <td><span class="badge bg-secondary">v{{ assoc.regla_calculo.version }}</span></td>
+                                    <td class="text-end">
+                                        <form action="{{ url_for('planilla.remove_regla', planilla_id=planilla.id, association_id=assoc.id) }}" method="POST" class="d-inline">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="{{ _('Remover') }}" onclick="return confirm('{{ _('¿Remover esta regla de la planilla?') }}')">
+                                                <i class="bi bi-x-lg"></i>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-code-square display-4 text-muted"></i>
+                        <p class="lead mt-3">{{ _('No hay reglas de cálculo asignadas a esta planilla') }}</p>
+                        <p class="text-muted">{{ _('Seleccione reglas del formulario para agregarlas.') }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,88 @@
+{#-
+SPDX-License-Identifier: Apache-2.0
+SPDX-FileCopyrightText: 2025 - 2026 BMO Soluciones, S.A.
+-#}
+
+{% extends 'base.html' %}
+{% from 'macros.html' import render_field, render_form_errors %}
+
+{% block content %}
+<div class="container">
+    {{ render_form_errors(form) }}
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-person-circle me-2"></i>{{ _('Mi Perfil') }}</h2>
+        <a href="{{ url_for('app.index') }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left me-1"></i>{{ _('Volver') }}
+        </a>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <form method="POST" action="">
+                {{ form.hidden_tag() }}
+                
+                <h5 class="mb-3">{{ _('Información Personal') }}</h5>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label"><strong>{{ _('Usuario') }}</strong></label>
+                            <p class="form-control-plaintext">{{ current_user.usuario }}</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label"><strong>{{ _('Tipo de usuario') }}</strong></label>
+                            <p class="form-control-plaintext">{{ current_user.tipo|title }}</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        {{ render_field(form.nombre) }}
+                    </div>
+                    <div class="col-md-6">
+                        {{ render_field(form.apellido) }}
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        {{ render_field(form.correo_electronico) }}
+                    </div>
+                    <div class="col-md-6">
+                        {{ render_field(form.idioma) }}
+                    </div>
+                </div>
+                
+                <hr class="my-4">
+                
+                <h5 class="mb-3">{{ _('Cambiar Contraseña') }}</h5>
+                <p class="text-muted small">{{ _('Deja estos campos en blanco si no deseas cambiar tu contraseña.') }}</p>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        {{ render_field(form.current_password) }}
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        {{ render_field(form.new_password) }}
+                    </div>
+                    <div class="col-md-6">
+                        {{ render_field(form.confirm_password) }}
+                    </div>
+                </div>
+                
+                <div class="mt-4">
+                    {{ form.submit(class="btn btn-primary") }}
+                    <a href="{{ url_for('app.index') }}" class="btn btn-secondary">{{ _('Cancelar') }}</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

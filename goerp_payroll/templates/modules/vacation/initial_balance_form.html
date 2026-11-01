@@ -1,0 +1,98 @@
+{#-
+SPDX-License-Identifier: Apache-2.0
+SPDX-FileCopyrightText: 2025 - 2026 BMO Soluciones, S.A.
+-#}
+
+{% extends "base.html" %}
+{% block title %}{{ _('Cargar Saldo Inicial de Vacaciones') }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-upload"></i> {{ _('Cargar Saldo Inicial de Vacaciones') }}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        <strong>{{ _('Uso:') }}</strong> 
+                        {{ _('Use este formulario para cargar el saldo inicial de vacaciones de un empleado al momento de implementar el sistema.') }}
+                        <br><br>
+                        <strong>{{ _('Importante:') }}</strong>
+                        <ul class="mb-0">
+                            <li>{{ _('El empleado debe tener una cuenta de vacaciones activa.') }}</li>
+                            <li>{{ _('Solo puede cargar saldo inicial en cuentas sin movimientos previos.') }}</li>
+                            <li>{{ _('Para cargar múltiples empleados, use la opción de') }} <a href="{{ url_for('vacation.initial_balance_bulk') }}">{{ _('carga masiva desde Excel') }}</a>.</li>
+                        </ul>
+                    </div>
+                    
+                    <form method="POST" novalidate>
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="form-group">
+                            {{ form.empleado_id.label(class="form-label required") }}
+                            {{ form.empleado_id(class="form-control" + (' is-invalid' if form.empleado_id.errors else '')) }}
+                            {% if form.empleado_id.description %}
+                            <small class="form-text text-muted">{{ form.empleado_id.description }}</small>
+                            {% endif %}
+                            {% if form.empleado_id.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.empleado_id.errors[0] }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="form-group">
+                            {{ form.saldo_inicial.label(class="form-label required") }}
+                            {{ form.saldo_inicial(class="form-control" + (' is-invalid' if form.saldo_inicial.errors else ''), placeholder="0.00") }}
+                            {% if form.saldo_inicial.description %}
+                            <small class="form-text text-muted">{{ form.saldo_inicial.description }}</small>
+                            {% endif %}
+                            {% if form.saldo_inicial.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.saldo_inicial.errors[0] }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="form-group">
+                            {{ form.fecha_corte.label(class="form-label required") }}
+                            {{ form.fecha_corte(class="form-control" + (' is-invalid' if form.fecha_corte.errors else '')) }}
+                            {% if form.fecha_corte.description %}
+                            <small class="form-text text-muted">{{ form.fecha_corte.description }}</small>
+                            {% endif %}
+                            {% if form.fecha_corte.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.fecha_corte.errors[0] }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="form-group">
+                            {{ form.observaciones.label(class="form-label") }}
+                            {{ form.observaciones(class="form-control" + (' is-invalid' if form.observaciones.errors else ''), rows=3) }}
+                            {% if form.observaciones.description %}
+                            <small class="form-text text-muted">{{ form.observaciones.description }}</small>
+                            {% endif %}
+                            {% if form.observaciones.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.observaciones.errors[0] }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="form-group mt-4">
+                            {{ form.submit(class="btn btn-primary btn-lg") }}
+                            <a href="{{ url_for('vacation.dashboard') }}" class="btn btn-secondary">{{ _('Cancelar') }}</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

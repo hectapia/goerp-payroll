@@ -1,0 +1,91 @@
+[project]
+name = "goerp-payroll"
+description = "A jurisdiction-agnostic payroll calculation engine."
+requires-python = ">= 3.12"
+readme = "README.md"
+dynamic = ["version", "dependencies"]
+
+[project.scripts]
+payrollctl = "goerp_payroll.cli:main"
+
+[build-system]
+requires = ["setuptools >= 68.0.0, < 70.0.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["goerp_payroll*"]
+exclude = ["dev*", "tests*", "docs*"]
+
+[tool.setuptools.package-data]
+goerp_payroll = ["static/**/*", "templates/**/*", "translations/**/*"]
+
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
+version = {attr = "goerp_payroll.version.__version__"}
+
+[tool.black]
+line-length = 120
+target-version = ['py311']
+include = '\.pyi?$'
+
+[tool.isort]
+profile = "black"
+line_length = 120
+
+[tool.pylint.format]
+max-line-length = 120
+
+[tool.pylint.messages_control]
+disable = [
+    "C0103",  # too-few-public-methods
+    "C0302",  # too-many-lines
+    "C0209",  # consider-using-f-string
+    "C0114",  # missing-module-docstring
+    "C0115",  # missing-class-docstring
+    "C0116",  # missing-function-docstring
+    "C0415",  # import-outside-toplevel
+    "R0902",  # too-many-instance-attributes
+    "R0903",  # too-few-public-methods
+    "R0901",  # too-many-ancestors
+    "R0911",  # too-many-nested-blocks
+    "R0912",  # too-many-branches
+    "R0913",  # Too many arguments
+    "R0914",  # too-many-locals
+    "R0915",  # too-many-statements
+    "R0917",  # too-many-instance-attributes
+    "R1702",  # too-many-nested-blocks
+    "R0801",  # duplicate-code
+    "W0223",  # abstract-method (SQLAlchemy TypeDecorator false positives)
+    "W0237",  # arguments-renamed (intentional domain-specific parameter names)
+    "W0603",  # global-statement
+    "W0613",  # unused-argument (framework/interface callbacks)
+    "W0621",  # redefined-outer-name
+    "W1404",  # implicit-str-concat
+    "W2301",  # unnecessary-ellipsis (typing protocol stubs)
+    "W0718",  # broad-exception-caught
+]
+
+[tool.pylint.typecheck]
+generated-members = [
+    "orjson.dumps",
+    "orjson.loads",
+]
+
+[tool.flake8]
+max-line-length = 120
+extend-ignore = ["E203", "W503"]
+
+[tool.mypy]
+python_version = "3.12"
+warn_unused_configs = true
+files = ["goerp_payroll"]
+exclude = "(^|[\\\\/])tests([\\\\/]|$)"
+disable_error_code = ["import-untyped"]
+
+[[tool.mypy.overrides]]
+module = ["goerp_payroll.model"]
+disable_error_code = ["name-defined"]
+
+[tool.ruff]
+lint.ignore = ["ALL"]

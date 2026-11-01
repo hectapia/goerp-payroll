@@ -1,0 +1,97 @@
+{#-
+SPDX-License-Identifier: Apache-2.0
+SPDX-FileCopyrightText: 2025 - 2026 BMO Soluciones, S.A.
+-#}
+
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>{{ _('Importar Tipos de Cambio desde Excel') }}</h2>
+        <a href="{{ url_for('exchange_rate.index') }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left me-1"></i>{{ _('Volver') }}
+        </a>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">{{ _('Instrucciones') }}</h5>
+            <p>{{ _('El archivo Excel debe contener las siguientes columnas en el siguiente orden:') }}</p>
+            <ol>
+                <li><strong>{{ _('Fecha') }}</strong>: {{ _('Fecha del tipo de cambio (formato YYYY-MM-DD o DD/MM/YYYY)') }}</li>
+                <li><strong>{{ _('Moneda Base') }}</strong>: {{ _('Código de la moneda origen (ej: USD, NIO)') }}</li>
+                <li><strong>{{ _('Moneda Destino') }}</strong>: {{ _('Código de la moneda destino (ej: USD, NIO)') }}</li>
+                <li><strong>{{ _('Tipo de Cambio') }}</strong>: {{ _('Tasa de cambio (puede tener hasta 4 decimales)') }}</li>
+            </ol>
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle me-1"></i>
+                {{ _('Nota: La primera fila del archivo debe contener los encabezados de las columnas y será ignorada durante la importación.') }}
+            </div>
+            <div class="alert alert-warning">
+                <i class="bi bi-exclamation-triangle me-1"></i>
+                {{ _('Si un tipo de cambio ya existe para la misma fecha y par de monedas, será actualizado con el nuevo valor.') }}
+            </div>
+        </div>
+    </div>
+
+    <div class="card mt-3">
+        <div class="card-body">
+            <h5 class="card-title">{{ _('Seleccionar Archivo') }}</h5>
+            <form method="POST" action="{{ url_for('exchange_rate.import_excel') }}" enctype="multipart/form-data">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="mb-3">
+                    <label for="file" class="form-label">{{ _('Archivo Excel') }}</label>
+                    <input type="file" class="form-control" id="file" name="file" accept=".xlsx,.xls" required>
+                    <div class="form-text">{{ _('Formatos soportados: .xlsx, .xls') }}</div>
+                </div>
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-upload me-1"></i>{{ _('Importar') }}
+                </button>
+                <a href="{{ url_for('exchange_rate.index') }}" class="btn btn-secondary">
+                    {{ _('Cancelar') }}
+                </a>
+            </form>
+        </div>
+    </div>
+
+    <div class="card mt-3">
+        <div class="card-body">
+            <h5 class="card-title">{{ _('Ejemplo de Formato') }}</h5>
+            <div class="table-responsive">
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>{{ _('Fecha') }}</th>
+                            <th>{{ _('Moneda Base') }}</th>
+                            <th>{{ _('Moneda Destino') }}</th>
+                            <th>{{ _('Tipo de Cambio') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>2024-01-15</td>
+                            <td>USD</td>
+                            <td>NIO</td>
+                            <td>36.5000</td>
+                        </tr>
+                        <tr>
+                            <td>2024-01-16</td>
+                            <td>USD</td>
+                            <td>NIO</td>
+                            <td>36.5500</td>
+                        </tr>
+                        <tr>
+                            <td>2024-01-15</td>
+                            <td>EUR</td>
+                            <td>USD</td>
+                            <td>1.0950</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

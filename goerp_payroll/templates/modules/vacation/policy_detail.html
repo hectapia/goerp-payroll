@@ -1,0 +1,207 @@
+{#-
+SPDX-License-Identifier: Apache-2.0
+SPDX-FileCopyrightText: 2025 - 2026 BMO Soluciones, S.A.
+-#}
+
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>{{ policy.nombre }}</h2>
+        <div>
+            <a href="{{ url_for('vacation.policy_edit', policy_id=policy.id) }}" class="btn btn-primary">
+                <i class="bi bi-pencil me-1"></i>{{ _('Editar') }}
+            </a>
+            <a href="{{ url_for('vacation.policy_index') }}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left me-1"></i>{{ _('Volver') }}
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">{{ _('Información General') }}</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-4">{{ _('Código') }}</dt>
+                        <dd class="col-sm-8"><strong>{{ policy.codigo }}</strong></dd>
+                        
+                        <dt class="col-sm-4">{{ _('Descripción') }}</dt>
+                        <dd class="col-sm-8">{{ policy.descripcion or '-' }}</dd>
+                        
+                        <dt class="col-sm-4">{{ _('Planilla') }}</dt>
+                        <dd class="col-sm-8">
+                            {% if policy.planilla %}
+                                <a href="{{ url_for('planilla.view', planilla_id=policy.planilla.id) }}">
+                                    {{ policy.planilla.nombre }}
+                                </a>
+                                {% if policy.planilla.empresa %}
+                                    <br><small class="text-muted">{{ policy.planilla.empresa.razon_social }}</small>
+                                {% endif %}
+                            {% else %}
+                                {{ _('Global (No asociada a planilla)') }}
+                            {% endif %}
+                        </dd>
+                        
+                        <dt class="col-sm-4">{{ _('Empresa') }}</dt>
+                        <dd class="col-sm-8">{{ policy.empresa.razon_social if policy.empresa else _('Todas') }}</dd>
+                        
+                        <dt class="col-sm-4">{{ _('Estado') }}</dt>
+                        <dd class="col-sm-8">
+                            {% if policy.activo %}
+                                <span class="badge bg-success">{{ _('Activa') }}</span>
+                            {% else %}
+                                <span class="badge bg-warning">{{ _('Inactiva') }}</span>
+                            {% endif %}
+                        </dd>
+                    </dl>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">{{ _('Configuración de Acumulación') }}</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-4">{{ _('Método') }}</dt>
+                        <dd class="col-sm-8">{{ policy.accrual_method }}</dd>
+                        
+                        <dt class="col-sm-4">{{ _('Tasa') }}</dt>
+                        <dd class="col-sm-8">{{ policy.accrual_rate }} {{ policy.unit_type }} por período</dd>
+                        
+                        <dt class="col-sm-4">{{ _('Frecuencia') }}</dt>
+                        <dd class="col-sm-8">{{ policy.accrual_frequency }}</dd>
+                        
+                        <dt class="col-sm-4">{{ _('Base') }}</dt>
+                        <dd class="col-sm-8">{{ policy.accrual_basis or '-' }}</dd>
+                        
+                        <dt class="col-sm-4">{{ _('Días Mínimos de Servicio') }}</dt>
+                        <dd class="col-sm-8">{{ policy.min_service_days }}</dd>
+                    </dl>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">{{ _('Límites') }}</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-4">{{ _('Balance Máximo') }}</dt>
+                        <dd class="col-sm-8">{{ policy.max_balance if policy.max_balance else _('Sin límite') }}</dd>
+                        
+                        <dt class="col-sm-4">{{ _('Permitir Balance Negativo') }}</dt>
+                        <dd class="col-sm-8">
+                            {% if policy.allow_negative %}
+                                <i class="bi bi-check-circle text-success"></i> {{ _('Sí') }}
+                            {% else %}
+                                <i class="bi bi-x-circle text-danger"></i> {{ _('No') }}
+                            {% endif %}
+                        </dd>
+                        
+                    </dl>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">{{ _('Contabilidad de Vacaciones Pagadas') }}</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-4">{{ _('Son vacaciones pagadas') }}</dt>
+                        <dd class="col-sm-8">
+                            {% if policy.son_vacaciones_pagadas %}
+                                <i class="bi bi-check-circle text-success"></i> {{ _('Sí') }}
+                            {% else %}
+                                <i class="bi bi-x-circle text-danger"></i> {{ _('No') }}
+                            {% endif %}
+                        </dd>
+
+                        <dt class="col-sm-4">{{ _('Porcentaje de pago de vacaciones') }}</dt>
+                        <dd class="col-sm-8">{{ policy.porcentaje_pago_vacaciones }}%</dd>
+
+                        <dt class="col-sm-4">{{ _('Cuenta débito') }}</dt>
+                        <dd class="col-sm-8">{{ policy.cuenta_debito_vacaciones_pagadas or '-' }}</dd>
+
+                        <dt class="col-sm-4">{{ _('Descripción débito') }}</dt>
+                        <dd class="col-sm-8">{{ policy.descripcion_cuenta_debito_vacaciones_pagadas or '-' }}</dd>
+
+                        <dt class="col-sm-4">{{ _('Cuenta crédito') }}</dt>
+                        <dd class="col-sm-8">{{ policy.cuenta_credito_vacaciones_pagadas or '-' }}</dd>
+
+                        <dt class="col-sm-4">{{ _('Descripción crédito') }}</dt>
+                        <dd class="col-sm-8">{{ policy.descripcion_cuenta_credito_vacaciones_pagadas or '-' }}</dd>
+                    </dl>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">{{ _('Configuración de Uso') }}</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-4">{{ _('Tipo de Unidad') }}</dt>
+                        <dd class="col-sm-8">{{ policy.unit_type }}</dd>
+                        
+                        <dt class="col-sm-4">{{ _('Contar Fines de Semana') }}</dt>
+                        <dd class="col-sm-8">
+                            {% if policy.count_weekends %}
+                                <i class="bi bi-check-circle text-success"></i> {{ _('Sí') }}
+                            {% else %}
+                                <i class="bi bi-x-circle text-danger"></i> {{ _('No') }}
+                            {% endif %}
+                        </dd>
+                        
+                        <dt class="col-sm-4">{{ _('Contar Feriados') }}</dt>
+                        <dd class="col-sm-8">
+                            {% if policy.count_holidays %}
+                                <i class="bi bi-check-circle text-success"></i> {{ _('Sí') }}
+                            {% else %}
+                                <i class="bi bi-x-circle text-danger"></i> {{ _('No') }}
+                            {% endif %}
+                        </dd>
+                        
+                        <dt class="col-sm-4">{{ _('Pagar al Terminar') }}</dt>
+                        <dd class="col-sm-8">
+                            {% if policy.payout_on_termination %}
+                                <i class="bi bi-check-circle text-success"></i> {{ _('Sí') }}
+                            {% else %}
+                                <i class="bi bi-x-circle text-danger"></i> {{ _('No') }}
+                            {% endif %}
+                        </dd>
+                        
+                        <dt class="col-sm-4">{{ _('Acumular Durante Vacaciones') }}</dt>
+                        <dd class="col-sm-8">
+                            {% if policy.accrue_during_leave %}
+                                <i class="bi bi-check-circle text-success"></i> {{ _('Sí') }}
+                            {% else %}
+                                <i class="bi bi-x-circle text-danger"></i> {{ _('No') }}
+                            {% endif %}
+                        </dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">{{ _('Estadísticas') }}</h5>
+                </div>
+                <div class="card-body text-center">
+                    <h3>{{ total_accounts }}</h3>
+                    <p class="text-muted">{{ _('Cuentas Activas') }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,188 @@
+{#-
+SPDX-License-Identifier: Apache-2.0
+SPDX-FileCopyrightText: 2025 - 2026 BMO Soluciones, S.A.
+-#}
+
+{% extends 'base.html' %}
+{% from 'macros.html' import render_pagination %}
+
+{% block content %}
+<div class="container-fluid">
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-calendar-check me-2"></i>{{ _('Nóminas (Payruns)') }}</h2>
+    </div>
+
+    <!-- Filter Form -->
+    <div class="card mb-3">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="bi bi-funnel me-1"></i>{{ _('Filtros') }}
+            </h5>
+        </div>
+        <div class="card-body">
+            <form method="GET" action="{{ url_for('nomina.index') }}">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label for="planilla_id" class="form-label">{{ _('Planilla') }}</label>
+                        <select class="form-select" id="planilla_id" name="planilla_id">
+                            <option value="">{{ _('Todas') }}</option>
+                            {% for planilla in planillas %}
+                                <option value="{{ planilla.id }}" {% if planilla_id == planilla.id %}selected{% endif %}>
+                                    {{ planilla.nombre }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="empresa_id" class="form-label">{{ _('Empresa') }}</label>
+                        <select class="form-select" id="empresa_id" name="empresa_id">
+                            <option value="">{{ _('Todas') }}</option>
+                            {% for empresa in empresas %}
+                                <option value="{{ empresa.id }}" {% if empresa_id == empresa.id %}selected{% endif %}>
+                                    {{ empresa.codigo }} - {{ empresa.razon_social }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="estado" class="form-label">{{ _('Estado') }}</label>
+                        <select class="form-select" id="estado" name="estado">
+                            <option value="">{{ _('Todos') }}</option>
+                            <option value="calculating" {% if estado == 'calculating' %}selected{% endif %}>{{ _('Calculando') }}</option>
+                            <option value="generated" {% if estado == 'generated' %}selected{% endif %}>{{ _('Generado') }}</option>
+                            <option value="approved" {% if estado == 'approved' %}selected{% endif %}>{{ _('Aprobado') }}</option>
+                            <option value="applied" {% if estado == 'applied' %}selected{% endif %}>{{ _('Aplicado') }}</option>
+                            <option value="paid" {% if estado == 'paid' %}selected{% endif %}>{{ _('Pagado') }}</option>
+                            <option value="cancelled" {% if estado == 'cancelled' %}selected{% endif %}>{{ _('Anulado') }}</option>
+                            <option value="error" {% if estado == 'error' %}selected{% endif %}>{{ _('Error') }}</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="fecha_desde" class="form-label">{{ _('Período desde') }}</label>
+                        <input type="date" class="form-control" id="fecha_desde" name="fecha_desde" value="{{ fecha_desde or '' }}">
+                    </div>
+                    <div class="col-md-2">
+                        <label for="fecha_hasta" class="form-label">{{ _('Período hasta') }}</label>
+                        <input type="date" class="form-control" id="fecha_hasta" name="fecha_hasta" value="{{ fecha_hasta or '' }}">
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-search me-1"></i>{{ _('Buscar') }}
+                        </button>
+                        <a href="{{ url_for('nomina.index') }}" class="btn btn-secondary">
+                            <i class="bi bi-x-circle me-1"></i>{{ _('Limpiar') }}
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            {% if nominas %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>{{ _('Planilla') }}</th>
+                            <th>{{ _('Empresa') }}</th>
+                            <th>{{ _('Período') }}</th>
+                            <th>{{ _('Fecha Generación') }}</th>
+                            <th>{{ _('Estado') }}</th>
+                            <th class="text-end">{{ _('Total Bruto') }}</th>
+                            <th class="text-end">{{ _('Total Deducciones') }}</th>
+                            <th class="text-end">{{ _('Total Neto') }}</th>
+                            <th>{{ _('Generado Por') }}</th>
+                            <th class="text-end">{{ _('Acciones') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for nomina in nominas %}
+                        <tr>
+                            <td>
+                                {% if nomina.planilla and nomina.planilla_id %}
+                                    <strong>
+                                        <a href="{{ url_for('planilla.edit', planilla_id=nomina.planilla_id) }}" class="text-decoration-none">
+                                            {{ nomina.planilla.nombre }}
+                                        </a>
+                                    </strong>
+                                    <br><small class="text-muted">ID: {{ nomina.planilla_id }}</small>
+                                {% else %}
+                                    <strong>-</strong>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if nomina.planilla and nomina.planilla.empresa %}
+                                    {{ nomina.planilla.empresa.codigo }}
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {{ nomina.periodo_inicio.strftime('%d/%m/%Y') }} -
+                                {{ nomina.periodo_fin.strftime('%d/%m/%Y') }}
+                            </td>
+                            <td>{{ nomina.fecha_generacion.strftime('%d/%m/%Y %H:%M') }}</td>
+                            <td>
+                                {% if nomina.estado == 'calculating' %}
+                                <span class="badge bg-primary">
+                                    <i class="bi bi-hourglass-split"></i> {{ _('Calculando') }}
+                                    {% if nomina.total_empleados and nomina.total_empleados > 0 %}
+                                    ({{ nomina.empleados_procesados }}/{{ nomina.total_empleados }})
+                                    {% endif %}
+                                </span>
+                                {% elif nomina.estado == 'generated' %}
+                                <span class="badge bg-warning text-dark">{{ _('Generado') }}</span>
+                                {% elif nomina.estado == 'approved' %}
+                                <span class="badge bg-info">{{ _('Aprobado') }}</span>
+                                {% elif nomina.estado == 'applied' %}
+                                <span class="badge bg-success">{{ _('Aplicado') }}</span>
+                                {% elif nomina.estado == 'paid' %}
+                                <span class="badge bg-success">{{ _('Pagado') }}</span>
+                                {% elif nomina.estado == 'cancelled' %}
+                                <span class="badge bg-secondary">{{ _('Anulado') }}</span>
+                                {% elif nomina.estado == 'error' %}
+                                <span class="badge bg-danger">{{ _('Error') }}</span>
+                                {% else %}
+                                <span class="badge bg-secondary">{{ nomina.estado }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">{{ "{:,.2f}".format(nomina.total_bruto|float) if nomina.total_bruto else '0.00' }}</td>
+                            <td class="text-end">{{ "{:,.2f}".format(nomina.total_deducciones|float) if nomina.total_deducciones else '0.00' }}</td>
+                            <td class="text-end">
+                                <strong>{{ "{:,.2f}".format(nomina.total_neto|float) if nomina.total_neto else '0.00' }}</strong>
+                            </td>
+                            <td>{{ nomina.generado_por or '-' }}</td>
+                            <td class="text-end">
+                                {% if nomina.planilla_id %}
+                                    <a href="{{ url_for('planilla.ver_nomina', planilla_id=nomina.planilla_id, nomina_id=nomina.id) }}"
+                                       class="btn btn-sm btn-outline-primary" title="{{ _('Ver Detalle') }}">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                {% else %}
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" disabled title="{{ _('Sin planilla asociada') }}">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {{ render_pagination(pagination, 'nomina.index') }}
+            {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-calendar-check display-1 text-muted"></i>
+                <p class="lead mt-3">{{ _('No hay nóminas registradas') }}</p>
+                <p class="text-muted">{{ _('Las nóminas se crean ejecutando una planilla') }}</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

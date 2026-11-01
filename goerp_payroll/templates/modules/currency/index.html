@@ -1,0 +1,108 @@
+{#-
+SPDX-License-Identifier: Apache-2.0
+SPDX-FileCopyrightText: 2025 - 2026 BMO Soluciones, S.A.
+-#}
+
+{% extends 'base.html' %}
+{% from 'macros.html' import render_pagination %}
+
+{% block content %}
+<div class="container">
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-currency-exchange me-2"></i>{{ _('Monedas') }}</h2>
+        <a href="{{ url_for('currency.new') }}" class="btn btn-primary">
+            <i class="bi bi-plus-circle me-1"></i>{{ _('Nueva Moneda') }}
+        </a>
+    </div>
+
+    <!-- Filter Form -->
+    <div class="card mb-3">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="bi bi-funnel me-1"></i>{{ _('Filtros') }}
+            </h5>
+        </div>
+        <div class="card-body">
+            <form method="GET" action="{{ url_for('currency.index') }}">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="buscar" class="form-label">{{ _('Buscar') }}</label>
+                        <input type="text" class="form-control" id="buscar" name="buscar" 
+                               value="{{ buscar or '' }}" 
+                               placeholder="{{ _('Código o nombre...') }}">
+                    </div>
+                    <div class="col-md-6">
+                        <label for="estado" class="form-label">{{ _('Estado') }}</label>
+                        <select class="form-select" id="estado" name="estado">
+                            <option value="">{{ _('Todos') }}</option>
+                            <option value="activo" {% if estado == 'activo' %}selected{% endif %}>{{ _('Activo') }}</option>
+                            <option value="inactivo" {% if estado == 'inactivo' %}selected{% endif %}>{{ _('Inactivo') }}</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-search me-1"></i>{{ _('Buscar') }}
+                        </button>
+                        <a href="{{ url_for('currency.index') }}" class="btn btn-secondary">
+                            <i class="bi bi-x-circle me-1"></i>{{ _('Limpiar') }}
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>{{ _('Código') }}</th>
+                            <th>{{ _('Nombre') }}</th>
+                            <th>{{ _('Símbolo') }}</th>
+                            <th>{{ _('Estado') }}</th>
+                            <th>{{ _('Acciones') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for currency in currencies %}
+                        <tr>
+                            <td><strong>{{ currency.codigo }}</strong></td>
+                            <td>{{ currency.nombre }}</td>
+                            <td>{{ currency.simbolo or '-' }}</td>
+                            <td>
+                                {% if currency.activo %}
+                                    <span class="badge bg-success">{{ _('Activo') }}</span>
+                                {% else %}
+                                    <span class="badge bg-warning">{{ _('Inactivo') }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{{ url_for('currency.edit', id_=currency.id) }}" class="btn btn-sm btn-outline-primary" title="{{ _('Editar') }}">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <form action="{{ url_for('currency.delete', id_=currency.id) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ _('¿Está seguro de eliminar esta moneda?') }}');">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="{{ _('Eliminar') }}">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="text-center text-muted">{{ _('No hay monedas registradas.') }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {{ render_pagination(pagination, 'currency.index') }}
+        </div>
+    </div>
+</div>
+{% endblock %}

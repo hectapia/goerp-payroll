@@ -1,0 +1,139 @@
+{#-
+SPDX-License-Identifier: Apache-2.0
+SPDX-FileCopyrightText: 2025 - 2026 BMO Soluciones, S.A.
+-#}
+
+{% extends "base.html" %}
+
+{% block content %}
+<div class="content-header">
+    <h3>{{ _('Aplicar Vacaciones a Nómina') }}</h3>
+    <div>
+        <a href="{{ url_for('planilla.ver_nomina', planilla_id=planilla.id, nomina_id=nomina.id) }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> {{ _('Volver a Nómina') }}
+        </a>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">
+            {{ _('Nómina') }}: {{ nomina.periodo_inicio.strftime('%d/%m/%Y') }} - {{ nomina.periodo_fin.strftime('%d/%m/%Y') }}
+        </h5>
+    </div>
+    <div class="card-body">
+        <p class="text-muted mb-0">
+            {{ _('Seleccione las vacaciones aprobadas que desea aplicar como novedades en esta nómina.') }}
+        </p>
+    </div>
+</div>
+
+<form method="POST">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="card mb-4">
+        <div class="card-header">
+            <h6 class="mb-0">{{ _('Configuración del Concepto') }}</h6>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4">
+                    <label class="form-label">{{ _('Tipo de Concepto') }}</label>
+                    <select class="form-select" name="tipo_concepto" id="tipo_concepto" required>
+                        <option value="income" {% if tipo_concepto == 'income' %}selected{% endif %}>{{ _('Percepción (Pago de Vacaciones)') }}</option>
+                        <option value="deduction" {% if tipo_concepto == 'deduction' %}selected{% endif %}>{{ _('Deducción (Descuento)') }}</option>
+                    </select>
+                </div>
+                <div class="col-md-4" id="percepcion-field">
+                    <label class="form-label">{{ _('Percepción') }}</label>
+                    <select class="form-select" name="percepcion_id" id="percepcion_id">
+                        <option value="">{{ _('-- Seleccionar Percepción --') }}</option>
+                        {% for perc in percepciones %}
+                        <option value="{{ perc.id }}" {% if percepcion_id == perc.id %}selected{% endif %}>
+                            {{ perc.codigo }} - {{ perc.nombre }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4" id="deduccion-field" style="display: none;">
+                    <label class="form-label">{{ _('Deducción') }}</label>
+                    <select class="form-select" name="deduccion_id" id="deduccion_id">
+                        <option value="">{{ _('-- Seleccionar Deducción --') }}</option>
+                        {% for ded in deducciones %}
+                        <option value="{{ ded.id }}" {% if deduccion_id == ded.id %}selected{% endif %}>
+                            {{ ded.codigo }} - {{ ded.nombre }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h6 class="mb-0">{{ _('Vacaciones Aprobadas Pendientes') }}</h6>
+            <span class="badge bg-primary">{{ vacaciones | length }}</span>
+        </div>
+        <div class="card-body">
+            {% if vacaciones %}
+            <div class="table-responsive">
+                <table class="table table-striped align-middle">
+                    <thead>
+                        <tr>
+                            <th style="width: 40px;"></th>
+                            <th>{{ _('Empleado') }}</th>
+                            <th>{{ _('Periodo') }}</th>
+                            <th class="text-end">{{ _('Unidades') }}</th>
+                            <th>{{ _('Observaciones') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for vac in vacaciones %}
+                        <tr>
+                            <td>
+                                <input type="checkbox" name="vacation_ids" value="{{ vac.id }}" class="form-check-input">
+                            </td>
+                            <td>{{ vac.empleado.primer_nombre }} {{ vac.empleado.primer_apellido }}</td>
+                            <td>
+                                {{ vac.start_date.strftime('%d/%m/%Y') }} - {{ vac.end_date.strftime('%d/%m/%Y') }}
+                            </td>
+                            <td class="text-end">{{ vac.units }}</td>
+                            <td class="text-muted">{{ vac.observaciones or '-' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-muted mb-0">{{ _('No hay vacaciones aprobadas pendientes para este período.') }}</p>
+            {% endif %}
+        </div>
+        <div class="card-footer text-end">
+            <button type="submit" class="btn btn-primary" {% if not vacaciones %}disabled{% endif %}>
+                <i class="bi bi-check-lg"></i> {{ _('Aplicar Selección') }}
+            </button>
+        </div>
+    </div>
+</form>
+
+<script>
+    const tipoConcepto = document.getElementById('tipo_concepto');
+    const percepcionField = document.getElementById('percepcion-field');
+    const deduccionField = document.getElementById('deduccion-field');
+
+    const toggleConceptFields = () => {
+        if (!tipoConcepto) return;
+        if (tipoConcepto.value === 'income') {
+            percepcionField.style.display = 'block';
+            deduccionField.style.display = 'none';
+        } else {
+            percepcionField.style.display = 'none';
+            deduccionField.style.display = 'block';
+        }
+    };
+
+    toggleConceptFields();
+    tipoConcepto.addEventListener('change', toggleConceptFields);
+</script>
+{% endblock %}
+

@@ -1,0 +1,187 @@
+{#-
+SPDX-License-Identifier: Apache-2.0
+SPDX-FileCopyrightText: 2025 - 2026 BMO Soluciones, S.A.
+-#}
+
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <h2><i class="bi bi-file-earmark-bar-graph me-2"></i>{{ _('Reporte de Prestaciones Acumuladas') }}</h2>
+            <p class="text-muted">{{ _('Consulte el historial transaccional de prestaciones acumuladas por empleado') }}</p>
+        </div>
+        <div class="col-auto">
+            <a href="{{ url_for('carga_inicial_prestacion.index') }}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left me-1"></i>{{ _('Volver') }}
+            </a>
+            <a href="{{ url_for('carga_inicial_prestacion.reporte_excel', empleado_id=empleado_id, prestacion_id=prestacion_id, fecha_desde=fecha_desde, fecha_hasta=fecha_hasta) }}" 
+               class="btn btn-success">
+                <i class="bi bi-file-earmark-excel me-1"></i>{{ _('Exportar a Excel') }}
+            </a>
+        </div>
+    </div>
+
+
+    <!-- Filters -->
+    <div class="card mb-3">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="bi bi-funnel me-2"></i>{{ _('Filtros de Auditoría') }}</h5>
+        </div>
+        <div class="card-body">
+            <form method="GET" action="{{ url_for('carga_inicial_prestacion.reporte') }}" class="row g-3">
+                <div class="col-md-3">
+                    <label for="empleado_id" class="form-label">{{ _('Empleado') }}</label>
+                    <select class="form-select" id="empleado_id" name="empleado_id">
+                        <option value="">{{ _('-- Todos --') }}</option>
+                        {% for emp in empleados %}
+                            <option value="{{ emp.id }}" {% if empleado_id == emp.id %}selected{% endif %}>
+                                {{ emp.codigo_empleado }} - {{ emp.primer_nombre }} {{ emp.primer_apellido }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="prestacion_id" class="form-label">{{ _('Prestación') }}</label>
+                    <select class="form-select" id="prestacion_id" name="prestacion_id">
+                        <option value="">{{ _('-- Todas --') }}</option>
+                        {% for prest in prestaciones %}
+                            <option value="{{ prest.id }}" {% if prestacion_id == prest.id %}selected{% endif %}>
+                                {{ prest.codigo }} - {{ prest.nombre }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="fecha_desde" class="form-label">{{ _('Desde') }}</label>
+                    <input type="date" class="form-control" id="fecha_desde" name="fecha_desde" value="{{ fecha_desde or '' }}">
+                </div>
+                <div class="col-md-2">
+                    <label for="fecha_hasta" class="form-label">{{ _('Hasta') }}</label>
+                    <input type="date" class="form-control" id="fecha_hasta" name="fecha_hasta" value="{{ fecha_hasta or '' }}">
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary me-2">
+                        <i class="bi bi-search me-1"></i>{{ _('Buscar') }}
+                    </button>
+                    <a href="{{ url_for('carga_inicial_prestacion.reporte') }}" class="btn btn-secondary">
+                        <i class="bi bi-x-circle me-1"></i>{{ _('Limpiar') }}
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Audit Report -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="bi bi-table me-2"></i>{{ _('Historial Transaccional - Auditoría') }}</h5>
+        </div>
+        <div class="card-body">
+            {% if transacciones %}
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle me-2"></i>
+                    {{ _('Total de transacciones: %(count)s', count=transacciones|length) }}
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover table-sm">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>{{ _('ID Transacción') }}</th>
+                                <th>{{ _('Fecha') }}</th>
+                                <th>{{ _('Empleado') }}</th>
+                                <th>{{ _('Prestación') }}</th>
+                                <th>{{ _('Tipo') }}</th>
+                                <th>{{ _('Periodo') }}</th>
+                                <th class="text-end">{{ _('Monto') }}</th>
+                                <th class="text-end">{{ _('Saldo Anterior') }}</th>
+                                <th class="text-end">{{ _('Saldo Nuevo') }}</th>
+                                <th>{{ _('Moneda') }}</th>
+                                <th>{{ _('Nómina') }}</th>
+                                <th>{{ _('Procesado Por') }}</th>
+                                <th>{{ _('Fecha Creación') }}</th>
+                                <th>{{ _('Observaciones') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for trans in transacciones %}
+                            <tr>
+                                <td><small class="font-monospace">{{ trans.id[:8] }}...</small></td>
+                                <td>{{ trans.fecha_transaccion.strftime('%Y-%m-%d') }}</td>
+                                <td>
+                                    <strong>{{ trans.empleado.codigo_empleado }}</strong><br>
+                                    <small>{{ trans.empleado.primer_nombre }} {{ trans.empleado.primer_apellido }}</small>
+                                </td>
+                                <td>
+                                    <strong>{{ trans.prestacion.codigo }}</strong><br>
+                                    <small>{{ trans.prestacion.nombre }}</small>
+                                </td>
+                                <td>
+                                    {% if trans.tipo_transaccion == 'saldo_inicial' %}
+                                        <span class="badge bg-primary">{{ _('Saldo Inicial') }}</span>
+                                    {% elif trans.tipo_transaccion == 'adicion' %}
+                                        <span class="badge bg-success">{{ _('Adición') }}</span>
+                                    {% elif trans.tipo_transaccion == 'disminucion' %}
+                                        <span class="badge bg-warning">{{ _('Disminución') }}</span>
+                                    {% elif trans.tipo_transaccion == 'ajuste' %}
+                                        <span class="badge bg-info">{{ _('Ajuste') }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ trans.mes }}/{{ trans.anio }}</td>
+                                <td class="text-end">
+                                    {% if trans.monto_transaccion >= 0 %}
+                                        <span class="text-success">+{{ "%.2f"|format(trans.monto_transaccion) }}</span>
+                                    {% else %}
+                                        <span class="text-danger">{{ "%.2f"|format(trans.monto_transaccion) }}</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end">{{ "%.2f"|format(trans.saldo_anterior) }}</td>
+                                <td class="text-end"><strong>{{ "%.2f"|format(trans.saldo_nuevo) }}</strong></td>
+                                <td>{{ trans.moneda.codigo }}</td>
+                                <td>
+                                    {% if trans.nomina %}
+                                        <small class="font-monospace">{{ trans.nomina.id[:8] }}...</small>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if trans.procesado_por %}
+                                        <small>{{ trans.procesado_por }}</small>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td><small>{{ trans.creado.strftime('%Y-%m-%d') }}</small></td>
+                                <td>
+                                    {% if trans.observaciones %}
+                                        <small>{{ trans.observaciones }}</small>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="alert alert-warning mt-3">
+                    <h6><i class="bi bi-shield-check me-2"></i>{{ _('Información de Auditoría') }}</h6>
+                    <ul class="mb-0">
+                        <li>{{ _('Este reporte muestra todas las transacciones que han modificado los saldos acumulados de prestaciones.') }}</li>
+                        <li>{{ _('Cada transacción es inmutable y no puede ser modificada o eliminada (registro transaccional).') }}</li>
+                        <li>{{ _('El saldo actual de una prestación es calculado sumando todas las transacciones hasta la fecha.') }}</li>
+                        <li>{{ _('Utilice el botón "Exportar a Excel" para obtener una copia completa de los registros con fines de auditoría.') }}</li>
+                    </ul>
+                </div>
+            {% else %}
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle me-2"></i>{{ _('No se encontraron transacciones con los filtros seleccionados.') }}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

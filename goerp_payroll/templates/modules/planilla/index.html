@@ -1,0 +1,216 @@
+{#-
+SPDX-License-Identifier: Apache-2.0
+SPDX-FileCopyrightText: 2025 - 2026 BMO Soluciones, S.A.
+-#}
+
+{% extends "base.html" %}
+{% from 'macros.html' import render_pagination %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-calculator me-2"></i>{{ _('Planillas') }}</h2>
+        <a href="{{ url_for('planilla.new') }}" class="btn btn-coaty">
+            <i class="bi bi-plus-circle me-1"></i>{{ _('Nueva Planilla') }}
+        </a>
+    </div>
+
+    <!-- Filter Form -->
+    <div class="card mb-3">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="bi bi-funnel me-1"></i>{{ _('Filtros') }}
+            </h5>
+        </div>
+        <div class="card-body">
+            <form method="GET" action="{{ url_for('planilla.index') }}">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label for="buscar" class="form-label">{{ _('Buscar') }}</label>
+                        <input type="text" class="form-control" id="buscar" name="buscar" 
+                               value="{{ buscar or '' }}" 
+                               placeholder="{{ _('Nombre o descripción...') }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="tipo_planilla_id" class="form-label">{{ _('Tipo de Planilla') }}</label>
+                        <select class="form-select" id="tipo_planilla_id" name="tipo_planilla_id">
+                            <option value="">{{ _('Todos') }}</option>
+                            {% for tipo in tipos_planilla %}
+                                <option value="{{ tipo.id }}" {% if tipo_planilla_id == tipo.id %}selected{% endif %}>
+                                    {{ tipo.codigo }} - {{ tipo.descripcion or tipo.codigo }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="empresa_id" class="form-label">{{ _('Empresa') }}</label>
+                        <select class="form-select" id="empresa_id" name="empresa_id">
+                            <option value="">{{ _('Todas') }}</option>
+                            {% for empresa in empresas %}
+                                <option value="{{ empresa.id }}" {% if empresa_id == empresa.id %}selected{% endif %}>
+                                    {{ empresa.codigo }} - {{ empresa.razon_social }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="estado" class="form-label">{{ _('Estado') }}</label>
+                        <select class="form-select" id="estado" name="estado">
+                            <option value="">{{ _('Todos') }}</option>
+                            <option value="activo" {% if estado == 'activo' %}selected{% endif %}>{{ _('Activo') }}</option>
+                            <option value="inactivo" {% if estado == 'inactivo' %}selected{% endif %}>{{ _('Inactivo') }}</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-search me-1"></i>{{ _('Buscar') }}
+                        </button>
+                        <a href="{{ url_for('planilla.index') }}" class="btn btn-secondary">
+                            <i class="bi bi-x-circle me-1"></i>{{ _('Limpiar') }}
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            {% if planillas %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>{{ _('Nombre') }}</th>
+                            <th>{{ _('Tipo') }}</th>
+                            <th>{{ _('Moneda') }}</th>
+                            <th class="text-center">{{ _('Nominas') }}</th>
+                            <th class="text-center">{{ _('Empleados') }}</th>
+                            <th class="text-center">{{ _('Percepciones') }}</th>
+                            <th class="text-center">{{ _('Deducciones') }}</th>
+                            <th class="text-center">{{ _('Prestaciones') }}</th>
+                            <th class="text-center">{{ _('Nóminas') }}</th>
+                            <th class="text-center">{{ _('Activo') }}</th>
+                            <th class="text-end">{{ _('Acciones') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for planilla in planillas %}
+                        <tr>
+                            <td>
+                                <strong><a href="{{ url_for('planilla.edit', planilla_id=planilla.id) }}" class="text-decoration-none">{{ planilla.nombre }}</a></strong>
+                                {% if planilla.descripcion %}
+                                <br><small class="text-muted">{{ planilla.descripcion }}</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if planilla.tipo_planilla %}
+                                {{ planilla.tipo_planilla.codigo }}
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if planilla.moneda %}
+                                {{ planilla.moneda.codigo }}
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                <span class="text-muted">{{ nomina_counts.get(planilla.id, 0) }}</span>
+                            </td>
+                            <td class="text-center">
+                                <span class="text-muted">{{ planilla.planilla_empleados | length }}</span>
+                            </td>
+                            <td class="text-center">
+                                <span class="text-muted">{{ planilla.planilla_percepciones | length }}</span>
+                            </td>
+                            <td class="text-center">
+                                <span class="text-muted">{{ planilla.planilla_deducciones | length }}</span>
+                            </td>
+                            <td class="text-center">
+                                <span class="text-muted">{{ planilla.planilla_prestaciones | length }}</span>
+                            </td>
+                            <td class="text-center">
+                                <span class="text-muted">{{ nomina_counts.get(planilla.id, 0) }}</span>
+                            </td>
+                            <td class="text-center">
+                                {% if planilla.activo %}
+                                <span class="badge bg-success">{{ _('Sí') }}</span>
+                                {% else %}
+                                <span class="badge bg-secondary">{{ _('No') }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{{ url_for('planilla.ejecutar_nomina', planilla_id=planilla.id) }}" 
+                                       class="btn btn-outline-primary" title="{{ _('Ejecutar Nómina') }}">
+                                        <i class="bi bi-play-fill"></i>
+                                    </a>
+                                    <a href="{{ url_for('planilla.listar_nominas', planilla_id=planilla.id) }}" 
+                                       class="btn btn-outline-primary" title="{{ _('Ver Nóminas') }}">
+                                        <i class="bi bi-list-ul"></i>
+                                    </a>
+                                    <a href="{{ url_for('planilla.edit', planilla_id=planilla.id) }}" 
+                                       class="btn btn-outline-primary" title="{{ _('Editar') }}">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <form action="{{ url_for('planilla.clone', planilla_id=planilla.id) }}" method="POST" class="d-inline">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="btn btn-outline-secondary" title="{{ _('Clonar') }}">
+                                            <i class="bi bi-copy"></i>
+                                        </button>
+                                    </form>
+                                    <button type="button" class="btn btn-outline-danger" 
+                                            title="{{ _('Eliminar') }}"
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#deleteModal{{ planilla.id }}">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                                
+                                <!-- Delete Modal -->
+                                <div class="modal fade" id="deleteModal{{ planilla.id }}" tabindex="-1">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title">{{ _('Confirmar eliminación') }}</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body text-start">
+                                                <p>{{ _('¿Está seguro que desea eliminar la planilla') }} <strong>{{ planilla.nombre }}</strong>?</p>
+                                                <p class="text-danger"><small>{{ _('Esta acción no se puede deshacer.') }}</small></p>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('Cancelar') }}</button>
+                                                <form action="{{ url_for('planilla.delete', planilla_id=planilla.id) }}" method="POST" class="d-inline">
+                                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                    <button type="submit" class="btn btn-danger">{{ _('Eliminar') }}</button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {{ render_pagination(pagination, 'planilla.index') }}
+            {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-calculator display-1 text-muted"></i>
+                <p class="lead mt-3">{{ _('No hay planillas registradas') }}</p>
+                <a href="{{ url_for('planilla.new') }}" class="btn btn-coaty">
+                    <i class="bi bi-plus-circle me-1"></i>{{ _('Crear Primera Planilla') }}
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

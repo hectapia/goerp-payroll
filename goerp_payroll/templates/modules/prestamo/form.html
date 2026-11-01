@@ -1,0 +1,206 @@
+{#-
+SPDX-License-Identifier: Apache-2.0
+SPDX-FileCopyrightText: 2025 - 2026 BMO Soluciones, S.A.
+-#}
+
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            <i class="bi bi-cash-coin me-2"></i>
+            {% if prestamo %}
+                {{ _('Editar Préstamo/Adelanto') }}
+            {% else %}
+                {{ _('Nuevo Préstamo/Adelanto') }}
+            {% endif %}
+        </h2>
+        <a href="{{ url_for('prestamo.index') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i>{{ _('Volver') }}
+        </a>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <form method="POST" novalidate>
+                {{ form.hidden_tag() }}
+                
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="{{ form.empleado_id.id }}" class="form-label">
+                            {{ form.empleado_id.label.text }} <span class="text-danger">*</span>
+                        </label>
+                        {{ form.empleado_id(class="form-select" + (" is-invalid" if form.empleado_id.errors else "")) }}
+                        {% if form.empleado_id.errors %}
+                            <div class="invalid-feedback">{{ form.empleado_id.errors[0] }}</div>
+                        {% endif %}
+                        {% if form.empleado_id.description %}
+                            <div class="form-text">{{ form.empleado_id.description }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-md-3">
+                        <label for="{{ form.tipo.id }}" class="form-label">
+                            {{ form.tipo.label.text }} <span class="text-danger">*</span>
+                        </label>
+                        {{ form.tipo(class="form-select" + (" is-invalid" if form.tipo.errors else "")) }}
+                        {% if form.tipo.errors %}
+                            <div class="invalid-feedback">{{ form.tipo.errors[0] }}</div>
+                        {% endif %}
+                        {% if form.tipo.description %}
+                            <div class="form-text">{{ form.tipo.description }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-md-3">
+                        <label for="{{ form.fecha_solicitud.id }}" class="form-label">
+                            {{ form.fecha_solicitud.label.text }} <span class="text-danger">*</span>
+                        </label>
+                        {{ form.fecha_solicitud(class="form-control" + (" is-invalid" if form.fecha_solicitud.errors else "")) }}
+                        {% if form.fecha_solicitud.errors %}
+                            <div class="invalid-feedback">{{ form.fecha_solicitud.errors[0] }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <label for="{{ form.monto_solicitado.id }}" class="form-label">
+                            {{ form.monto_solicitado.label.text }} <span class="text-danger">*</span>
+                        </label>
+                        {{ form.monto_solicitado(class="form-control" + (" is-invalid" if form.monto_solicitado.errors else "")) }}
+                        {% if form.monto_solicitado.errors %}
+                            <div class="invalid-feedback">{{ form.monto_solicitado.errors[0] }}</div>
+                        {% endif %}
+                        {% if form.monto_solicitado.description %}
+                            <div class="form-text">{{ form.monto_solicitado.description }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <label for="{{ form.moneda_id.id }}" class="form-label">
+                            {{ form.moneda_id.label.text }} <span class="text-danger">*</span>
+                        </label>
+                        {{ form.moneda_id(class="form-select" + (" is-invalid" if form.moneda_id.errors else "")) }}
+                        {% if form.moneda_id.errors %}
+                            <div class="invalid-feedback">{{ form.moneda_id.errors[0] }}</div>
+                        {% endif %}
+                        {% if form.moneda_id.description %}
+                            <div class="form-text">{{ form.moneda_id.description }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <label for="{{ form.cuotas_pactadas.id }}" class="form-label">
+                            {{ form.cuotas_pactadas.label.text }} <span class="text-danger">*</span>
+                        </label>
+                        {{ form.cuotas_pactadas(class="form-control" + (" is-invalid" if form.cuotas_pactadas.errors else "")) }}
+                        {% if form.cuotas_pactadas.errors %}
+                            <div class="invalid-feedback">{{ form.cuotas_pactadas.errors[0] }}</div>
+                        {% endif %}
+                        {% if form.cuotas_pactadas.description %}
+                            <div class="form-text">{{ form.cuotas_pactadas.description }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Interest Section (for loans) -->
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <label for="{{ form.tasa_interes.id }}" class="form-label">
+                            {{ form.tasa_interes.label.text }}
+                        </label>
+                        {{ form.tasa_interes(class="form-control" + (" is-invalid" if form.tasa_interes.errors else "")) }}
+                        {% if form.tasa_interes.errors %}
+                            <div class="invalid-feedback">{{ form.tasa_interes.errors[0] }}</div>
+                        {% endif %}
+                        {% if form.tasa_interes.description %}
+                            <div class="form-text">{{ form.tasa_interes.description }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <label for="{{ form.tipo_interes.id }}" class="form-label">
+                            {{ form.tipo_interes.label.text }}
+                        </label>
+                        {{ form.tipo_interes(class="form-select" + (" is-invalid" if form.tipo_interes.errors else "")) }}
+                        {% if form.tipo_interes.errors %}
+                            <div class="invalid-feedback">{{ form.tipo_interes.errors[0] }}</div>
+                        {% endif %}
+                        {% if form.tipo_interes.description %}
+                            <div class="form-text">{{ form.tipo_interes.description }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <label for="{{ form.deduccion_id.id }}" class="form-label">
+                            {{ form.deduccion_id.label.text }}
+                        </label>
+                        {{ form.deduccion_id(class="form-select" + (" is-invalid" if form.deduccion_id.errors else "")) }}
+                        {% if form.deduccion_id.errors %}
+                            <div class="invalid-feedback">{{ form.deduccion_id.errors[0] }}</div>
+                        {% endif %}
+                        {% if form.deduccion_id.description %}
+                            <div class="form-text">{{ form.deduccion_id.description }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Accounting Section -->
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="{{ form.cuenta_debe.id }}" class="form-label">
+                            {{ form.cuenta_debe.label.text }}
+                        </label>
+                        {{ form.cuenta_debe(class="form-control" + (" is-invalid" if form.cuenta_debe.errors else "")) }}
+                        {% if form.cuenta_debe.errors %}
+                            <div class="invalid-feedback">{{ form.cuenta_debe.errors[0] }}</div>
+                        {% endif %}
+                        {% if form.cuenta_debe.description %}
+                            <div class="form-text">{{ form.cuenta_debe.description }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label for="{{ form.cuenta_haber.id }}" class="form-label">
+                            {{ form.cuenta_haber.label.text }}
+                        </label>
+                        {{ form.cuenta_haber(class="form-control" + (" is-invalid" if form.cuenta_haber.errors else "")) }}
+                        {% if form.cuenta_haber.errors %}
+                            <div class="invalid-feedback">{{ form.cuenta_haber.errors[0] }}</div>
+                        {% endif %}
+                        {% if form.cuenta_haber.description %}
+                            <div class="form-text">{{ form.cuenta_haber.description }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Reason -->
+                <div class="row mb-3">
+                    <div class="col-12">
+                        <label for="{{ form.motivo.id }}" class="form-label">
+                            {{ form.motivo.label.text }}
+                        </label>
+                        {{ form.motivo(class="form-control" + (" is-invalid" if form.motivo.errors else ""), rows=3) }}
+                        {% if form.motivo.errors %}
+                            <div class="invalid-feedback">{{ form.motivo.errors[0] }}</div>
+                        {% endif %}
+                        {% if form.motivo.description %}
+                            <div class="form-text">{{ form.motivo.description }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end gap-2">
+                    <a href="{{ url_for('prestamo.index') }}" class="btn btn-secondary">
+                        {{ _('Cancelar') }}
+                    </a>
+                    {{ form.submit(class="btn btn-primary") }}
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,193 @@
+{#-
+SPDX-License-Identifier: Apache-2.0
+SPDX-FileCopyrightText: 2025 - 2026 BMO Soluciones, S.A.
+-#}
+
+{% extends "base.html" %}
+{% from 'macros.html' import render_field, render_form_errors %}
+
+{% block content %}
+{{ render_form_errors(form) }}
+
+<div class="content-header d-flex justify-content-between align-items-center mb-4">
+    <h3>
+        <i class="bi bi-{{ 'pencil' if is_edit else 'plus-circle' }}"></i>
+        {% if is_edit %}
+        {{ _('Editar Novedad') }}
+        {% else %}
+        {{ _('Nueva Novedad') }}
+        {% endif %}
+    </h3>
+    <a href="{{ url_for('planilla.listar_novedades', planilla_id=planilla.id, nomina_id=nomina.id) }}" class="btn btn-secondary">
+        <i class="bi bi-arrow-left"></i> {{ _('Volver') }}
+    </a>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header bg-light">
+        <div class="row">
+            <div class="col-md-4">
+                <strong>{{ _('Planilla:') }}</strong> {{ planilla.nombre }}
+            </div>
+            <div class="col-md-4">
+                <strong>{{ _('Período:') }}</strong> {{ nomina.periodo_inicio.strftime('%d/%m/%Y') }} - {{ nomina.periodo_fin.strftime('%d/%m/%Y') }}
+            </div>
+            <div class="col-md-4">
+                <strong>{{ _('Estado:') }}</strong>
+                {% if nomina.estado == 'generated' %}
+                <span class="badge bg-warning text-dark">{{ _('Generado') }}</span>
+                {% elif nomina.estado == 'approved' %}
+                <span class="badge bg-info">{{ _('Aprobado') }}</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">{{ _('Datos de la Novedad') }}</h5>
+    </div>
+    <div class="card-body">
+        <form method="post" novalidate>
+            {{ form.hidden_tag() }}
+
+            <div class="row">
+                <!-- Empleado -->
+                <div class="col-md-6">
+                    {{ render_field(form.empleado_id) }}
+                </div>
+
+                <!-- Tipo de Concepto -->
+                <div class="col-md-6">
+                    {{ render_field(form.tipo_concepto) }}
+                </div>
+            </div>
+
+            <div class="row">
+                <!-- Percepción (visible when tipo_concepto = percepcion) -->
+                <div class="col-md-6" id="percepcion-group">
+                    {{ render_field(form.percepcion_id) }}
+                </div>
+
+                <!-- Deducción (visible when tipo_concepto = deduccion) -->
+                <div class="col-md-6" id="deduccion-group">
+                    {{ render_field(form.deduccion_id) }}
+                </div>
+            </div>
+
+            <div class="row">
+                <!-- Código del Concepto -->
+                <div class="col-md-6">
+                    {{ render_field(form.codigo_concepto) }}
+                    <small class="text-muted">
+                        {{ _('Este código identifica el concepto en el sistema. Se actualizará automáticamente al seleccionar una percepción o deducción.') }}
+                    </small>
+                </div>
+
+                <!-- Tipo de Valor -->
+                <div class="col-md-6">
+                    {{ render_field(form.tipo_valor) }}
+                </div>
+            </div>
+
+            <div class="row">
+                <!-- Valor / Cantidad -->
+                <div class="col-md-6">
+                    {{ render_field(form.valor_cantidad) }}
+                    <small class="text-muted">
+                        {{ _('Ingrese el valor según el tipo seleccionado (ej: 5 para 5 horas, 1500 para un monto fijo).') }}
+                    </small>
+                </div>
+
+                <!-- Fecha de la Novedad -->
+                <div class="col-md-6">
+                    {{ render_field(form.fecha_novedad) }}
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    {{ render_field(form.es_inasistencia) }}
+                </div>
+                <div class="col-md-6">
+                    {{ render_field(form.descontar_pago_inasistencia) }}
+                </div>
+            </div>
+
+            <hr>
+
+            <div class="d-flex justify-content-between">
+                <a href="{{ url_for('planilla.listar_novedades', planilla_id=planilla.id, nomina_id=nomina.id) }}" class="btn btn-secondary">
+                    <i class="bi bi-x-circle"></i> {{ _('Cancelar') }}
+                </a>
+                {{ form.submit(class="btn btn-primary") }}
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const tipoConcepto = document.getElementById('tipo_concepto');
+    const percepcionGroup = document.getElementById('percepcion-group');
+    const deduccionGroup = document.getElementById('deduccion-group');
+    const percepcionSelect = document.getElementById('percepcion_id');
+    const deduccionSelect = document.getElementById('deduccion_id');
+    const codigoConcepto = document.getElementById('codigo_concepto');
+
+    // Early return if required elements are not found
+    if (!tipoConcepto || !percepcionGroup || !deduccionGroup) {
+        console.warn('Required form elements not found');
+        return;
+    }
+
+    function updateVisibility() {
+        if (tipoConcepto.value === 'income') {
+            percepcionGroup.style.display = 'block';
+            deduccionGroup.style.display = 'none';
+        } else if (tipoConcepto.value === 'deduction') {
+            percepcionGroup.style.display = 'none';
+            deduccionGroup.style.display = 'block';
+        } else {
+            percepcionGroup.style.display = 'none';
+            deduccionGroup.style.display = 'none';
+        }
+    }
+
+    function updateCodigoFromPercepcion() {
+        if (!percepcionSelect || !codigoConcepto) return;
+        const selectedOption = percepcionSelect.options[percepcionSelect.selectedIndex];
+        if (selectedOption && selectedOption.value) {
+            // Extract codigo from the option text (format: "CODIGO - Nombre")
+            const text = selectedOption.text;
+            const codigo = text.split(' - ')[0];
+            if (codigo && codigo !== '--') {
+                codigoConcepto.value = codigo;
+            }
+        }
+    }
+
+    function updateCodigoFromDeduccion() {
+        if (!deduccionSelect || !codigoConcepto) return;
+        const selectedOption = deduccionSelect.options[deduccionSelect.selectedIndex];
+        if (selectedOption && selectedOption.value) {
+            // Extract codigo from the option text (format: "CODIGO - Nombre")
+            const text = selectedOption.text;
+            const codigo = text.split(' - ')[0];
+            if (codigo && codigo !== '--') {
+                codigoConcepto.value = codigo;
+            }
+        }
+    }
+
+    // Initial visibility
+    updateVisibility();
+
+    // Event listeners
+    tipoConcepto.addEventListener('change', updateVisibility);
+    percepcionSelect.addEventListener('change', updateCodigoFromPercepcion);
+    deduccionSelect.addEventListener('change', updateCodigoFromDeduccion);
+});
+</script>
+{% endblock %}

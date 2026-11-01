@@ -1,0 +1,119 @@
+{#-
+SPDX-License-Identifier: Apache-2.0
+SPDX-FileCopyrightText: 2025 - 2026 BMO Soluciones, S.A.
+-#}
+
+{% extends 'base.html' %}
+{% from 'macros.html' import render_pagination %}
+
+{% block content %}
+<div class="container">
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-graph-up-arrow me-2"></i>{{ _('Tipos de Cambio') }}</h2>
+        <div>
+            <a href="{{ url_for('exchange_rate.import_excel') }}" class="btn btn-success me-2">
+                <i class="bi bi-file-earmark-excel me-1"></i>{{ _('Importar desde Excel') }}
+            </a>
+            <a href="{{ url_for('exchange_rate.new') }}" class="btn btn-primary">
+                <i class="bi bi-plus-circle me-1"></i>{{ _('Nuevo Tipo de Cambio') }}
+            </a>
+        </div>
+    </div>
+
+    <!-- Filter Form -->
+    <div class="card mb-3">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="bi bi-funnel me-1"></i>{{ _('Filtros') }}
+            </h5>
+        </div>
+        <div class="card-body">
+            <form method="GET" action="{{ url_for('exchange_rate.index') }}">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label for="fecha_desde" class="form-label">{{ _('Fecha desde') }}</label>
+                        <input type="date" class="form-control" id="fecha_desde" name="fecha_desde" value="{{ fecha_desde or '' }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="fecha_hasta" class="form-label">{{ _('Fecha hasta') }}</label>
+                        <input type="date" class="form-control" id="fecha_hasta" name="fecha_hasta" value="{{ fecha_hasta or '' }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="moneda_origen_id" class="form-label">{{ _('Moneda origen') }}</label>
+                        <select class="form-select" id="moneda_origen_id" name="moneda_origen_id">
+                            <option value="">{{ _('Todas') }}</option>
+                            {% for id, name in currencies %}
+                                <option value="{{ id }}" {% if moneda_origen_id == id %}selected{% endif %}>{{ name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="moneda_destino_id" class="form-label">{{ _('Moneda destino') }}</label>
+                        <select class="form-select" id="moneda_destino_id" name="moneda_destino_id">
+                            <option value="">{{ _('Todas') }}</option>
+                            {% for id, name in currencies %}
+                                <option value="{{ id }}" {% if moneda_destino_id == id %}selected{% endif %}>{{ name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-search me-1"></i>{{ _('Buscar') }}
+                        </button>
+                        <a href="{{ url_for('exchange_rate.index') }}" class="btn btn-secondary">
+                            <i class="bi bi-x-circle me-1"></i>{{ _('Limpiar') }}
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>{{ _('Fecha') }}</th>
+                            <th>{{ _('Moneda Origen') }}</th>
+                            <th>{{ _('Moneda Destino') }}</th>
+                            <th>{{ _('Tasa') }}</th>
+                            <th>{{ _('Acciones') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for rate in exchange_rates %}
+                        <tr>
+                            <td>{{ rate.fecha.strftime('%Y-%m-%d') }}</td>
+                            <td>{{ rate.moneda_origen.codigo if rate.moneda_origen else '-' }}</td>
+                            <td>{{ rate.moneda_destino.codigo if rate.moneda_destino else '-' }}</td>
+                            <td>{{ rate.tasa }}</td>
+                            <td>
+                                <a href="{{ url_for('exchange_rate.edit', id_=rate.id) }}" class="btn btn-sm btn-outline-primary" title="{{ _('Editar') }}">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <form action="{{ url_for('exchange_rate.delete', id_=rate.id) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ _('¿Está seguro de eliminar este tipo de cambio?') }}');">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="{{ _('Eliminar') }}">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="text-center text-muted">{{ _('No hay tipos de cambio registrados.') }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {{ render_pagination(pagination, 'exchange_rate.index') }}
+        </div>
+    </div>
+</div>
+{% endblock %}

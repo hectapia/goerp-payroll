@@ -1,0 +1,476 @@
+{#-
+SPDX-License-Identifier: Apache-2.0
+SPDX-FileCopyrightText: 2025 - 2026 BMO Soluciones, S.A.
+-#}
+
+{% extends 'base.html' %}
+{% block content %}
+<div class="container-fluid">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2>
+                <i class="bi bi-code-square me-2"></i>
+                {{ _('Editor de Esquema') }}: {{ rule.nombre }}
+            </h2>
+            <small class="text-muted">
+                {{ rule.codigo }} v{{ rule.version }} | {{ rule.jurisdiccion or
+                _('Sin jurisdicción') }}
+            </small>
+        </div>
+        <div>
+            <a
+                href="{{ url_for('calculation_rule.edit', id_=rule.id) }}"
+                class="btn btn-secondary"
+            >
+                <i class="bi bi-pencil me-1"></i>{{ _('Editar Metadatos') }}
+            </a>
+            <a
+                href="{{ url_for('calculation_rule.index') }}"
+                class="btn btn-outline-secondary"
+            >
+                <i class="bi bi-arrow-left me-1"></i>{{ _('Volver') }}
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Left Panel: Visual Editor -->
+        <div class="col-lg-7">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <i class="bi bi-ui-checks me-2"></i>{{ _('Editor Visual') }}
+                </div>
+                <div class="card-body">
+                    <!-- Meta Section -->
+                    <div class="schema-section mb-4">
+                        <h5 class="section-title">
+                            <i class="bi bi-info-circle me-2"></i>{{
+                            _('Configuración') }}
+                        </h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label"
+                                        >{{ _('Nombre de la regla') }}</label
+                                    >
+                                    <input
+                                        type="text"
+                                        class="form-control"
+                                        id="meta-name"
+                                        placeholder="{{ _('Ej: Income Tax Rule') }}"
+                                    />
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label"
+                                        >{{ _('Moneda de Referencia') }}</label
+                                    >
+                                    <input
+                                        type="text"
+                                        class="form-control"
+                                        id="meta-reference-currency"
+                                        placeholder="{{ _('Ej: NIO, USD') }}"
+                                    />
+                                    <div class="form-text">
+                                        {{ _('Moneda base para los cálculos. La
+                                        moneda de la planilla se define en el
+                                        Tipo de Planilla.') }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label"
+                                >{{ _('Descripción') }}</label
+                            >
+                            <textarea
+                                class="form-control"
+                                id="meta-description"
+                                rows="2"
+                                placeholder="{{ _('Descripción de lo que calcula esta regla') }}"
+                            ></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Inputs Section -->
+                    <div class="schema-section mb-4">
+                        <div
+                            class="d-flex justify-content-between align-items-center mb-3"
+                        >
+                            <h5 class="section-title mb-0">
+                                <i class="bi bi-box-arrow-in-right me-2"></i>{{
+                                _('Variables de Entrada') }}
+                            </h5>
+                            <button
+                                type="button"
+                                class="btn btn-sm btn-primary"
+                                onclick="addInput()"
+                            >
+                                <i class="bi bi-plus-circle me-1"></i>{{
+                                _('Agregar') }}
+                            </button>
+                        </div>
+                        <div id="inputs-container">
+                            <!-- Dynamic inputs will be added here -->
+                        </div>
+                        <div class="text-muted small mt-2">
+                            <i class="bi bi-info-circle me-1"></i>
+                            {{ _('Las variables de entrada pueden venir de la
+                            base de datos (empleado.salario_base) o ser valores
+                            estáticos.') }}
+                        </div>
+                    </div>
+
+                    <!-- Steps Section -->
+                    <div class="schema-section mb-4">
+                        <div
+                            class="d-flex justify-content-between align-items-center mb-3"
+                        >
+                            <h5 class="section-title mb-0">
+                                <i class="bi bi-list-ol me-2"></i>{{ _('Pasos de
+                                Cálculo') }}
+                            </h5>
+                            <div class="btn-group btn-group-sm">
+                                <button
+                                    type="button"
+                                    class="btn btn-primary dropdown-toggle"
+                                    data-bs-toggle="dropdown"
+                                >
+                                    <i class="bi bi-plus-circle me-1"></i>{{
+                                    _('Agregar Paso') }}
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li>
+                                        <a
+                                            class="dropdown-item"
+                                            href="#"
+                                            onclick="addStep('calculation')"
+                                        >
+                                            <i class="bi bi-calculator me-2"></i
+                                            >{{ _('Cálculo') }}
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a
+                                            class="dropdown-item"
+                                            href="#"
+                                            onclick="addStep('conditional')"
+                                        >
+                                            <i
+                                                class="bi bi-signpost-split me-2"
+                                            ></i
+                                            >{{ _('Condicional') }}
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a
+                                            class="dropdown-item"
+                                            href="#"
+                                            onclick="addStep('tax_lookup')"
+                                        >
+                                            <i class="bi bi-table me-2"></i>{{
+                                            _('Búsqueda en Tabla') }}
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a
+                                            class="dropdown-item"
+                                            href="#"
+                                            onclick="addStep('assignment')"
+                                        >
+                                            <i
+                                                class="bi bi-arrow-right-circle me-2"
+                                            ></i
+                                            >{{ _('Asignación') }}
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div id="steps-container">
+                            <!-- Dynamic steps will be added here -->
+                        </div>
+                    </div>
+
+                    <!-- Tax Tables Section -->
+                    <div class="schema-section mb-4">
+                        <div
+                            class="d-flex justify-content-between align-items-center mb-3"
+                        >
+                            <h5 class="section-title mb-0">
+                                <i class="bi bi-table me-2"></i>{{ _('Tablas de
+                                Impuestos') }}
+                            </h5>
+                            <button
+                                type="button"
+                                class="btn btn-sm btn-primary"
+                                onclick="addTaxTable()"
+                            >
+                                <i class="bi bi-plus-circle me-1"></i>{{ _('Agregar
+                                Tabla') }}
+                            </button>
+                        </div>
+                        <div id="tax-tables-container">
+                            <!-- Dynamic tax tables will be added here -->
+                        </div>
+                    </div>
+
+                    <!-- Output Section -->
+                    <div class="schema-section">
+                        <h5 class="section-title">
+                            <i class="bi bi-box-arrow-right me-2"></i>{{
+                            _('Resultado Final') }}
+                        </h5>
+                        <div class="mb-3">
+                            <label class="form-label"
+                                >{{ _('Variable de salida') }}</label
+                            >
+                            <select class="form-select" id="output-variable">
+                                <option value="">
+                                    {{ _('Seleccionar variable de resultado...')
+                                    }}
+                                </option>
+                            </select>
+                            <div class="form-text">
+                                {{ _('Seleccione la variable que contiene el
+                                resultado final del cálculo.') }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Panel: JSON Preview & Testing -->
+        <div class="col-lg-5">
+            <!-- JSON Preview -->
+            <div class="card mb-4">
+                <div
+                    class="card-header bg-dark text-white d-flex justify-content-between align-items-center"
+                >
+                    <span
+                        ><i class="bi bi-code-slash me-2"></i>{{ _('Vista Previa
+                        JSON') }}</span
+                    >
+                    <div class="btn-group btn-group-sm">
+                        <button
+                            type="button"
+                            class="btn btn-outline-light"
+                            onclick="copyJson()"
+                        >
+                            <i class="bi bi-clipboard"></i>
+                        </button>
+                        <button
+                            type="button"
+                            class="btn btn-outline-light"
+                            onclick="formatJson()"
+                        >
+                            <i class="bi bi-magic"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <textarea
+                        id="json-preview"
+                        class="form-control font-monospace"
+                        rows="15"
+                        style="border: none; border-radius: 0; resize: vertical"
+                    ></textarea>
+                </div>
+            </div>
+
+            <!-- Test Panel -->
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white">
+                    <i class="bi bi-play-circle me-2"></i>{{ _('Probar Cálculo')
+                    }}
+                </div>
+                <div class="card-body">
+                    <div id="test-inputs-container">
+                        <!-- Dynamic test inputs will be generated -->
+                    </div>
+                    <button
+                        type="button"
+                        class="btn btn-info w-100 mt-3"
+                        onclick="testCalculation()"
+                    >
+                        <i class="bi bi-play-fill me-1"></i>{{ _('Ejecutar
+                        Prueba') }}
+                    </button>
+                    <div id="test-result" class="mt-3" style="display: none">
+                        <h6>{{ _('Resultado:') }}</h6>
+                        <pre
+                            class="bg-light p-3 rounded"
+                            id="test-result-content"
+                        ></pre>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button
+                            type="button"
+                            class="btn btn-success btn-lg"
+                            onclick="saveSchema()"
+                        >
+                            <i class="bi bi-check-lg me-2"></i>{{ _('Guardar
+                            Esquema') }}
+                        </button>
+                        <button
+                            type="button"
+                            class="btn btn-outline-primary"
+                            onclick="document.getElementById('json-file-input').click()"
+                        >
+                            <i class="bi bi-upload me-2"></i>{{ _('Cargar desde
+                            Archivo JSON') }}
+                        </button>
+                        <input
+                            type="file"
+                            id="json-file-input"
+                            accept=".json"
+                            style="display: none"
+                            onchange="loadJsonFile(event)"
+                        />
+                        <button
+                            type="button"
+                            class="btn btn-outline-secondary"
+                            onclick="loadExample()"
+                        >
+                            <i class="bi bi-file-earmark-code me-2"></i>{{
+                            _('Cargar Ejemplo de Impuesto Progresivo') }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .schema-section {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 1.25rem;
+        border: 1px solid #e9ecef;
+    }
+
+    .section-title {
+        color: #495057;
+        font-weight: 600;
+        margin-bottom: 1rem;
+    }
+
+    .input-item,
+    .step-item,
+    .tax-table-item {
+        background: white;
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        padding: 1rem;
+        margin-bottom: 0.75rem;
+        position: relative;
+        cursor: move;
+    }
+
+    .input-item .drag-handle,
+    .step-item .drag-handle {
+        position: absolute;
+        left: 0.5rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #6c757d;
+        cursor: grab;
+        font-size: 1.2rem;
+    }
+
+    .input-item .drag-handle:active,
+    .step-item .drag-handle:active {
+        cursor: grabbing;
+    }
+
+    .reorder-buttons {
+        position: absolute;
+        right: 3rem;
+        top: 0.5rem;
+        display: flex;
+        gap: 0.25rem;
+    }
+
+    .reorder-buttons .btn {
+        padding: 0.125rem 0.375rem;
+        font-size: 0.75rem;
+    }
+
+    .input-item:hover,
+    .step-item:hover,
+    .tax-table-item:hover {
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.1);
+    }
+
+    .remove-btn {
+        position: absolute;
+        top: 0.5rem;
+        right: 0.5rem;
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875rem;
+    }
+
+    .step-type-badge {
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .bracket-row {
+        background: #f8f9fa;
+        border-radius: 4px;
+        padding: 0.75rem;
+        margin-bottom: 0.5rem;
+    }
+
+    #json-preview {
+        font-size: 0.85rem;
+        background: #1e1e1e;
+        color: #d4d4d4;
+    }
+
+    .sortable-ghost {
+        opacity: 0.4;
+    }
+
+    .sortable-drag {
+        opacity: 0.8;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    }
+</style>
+
+<script>
+    // Schema data from backend - using tojson filter for proper escaping
+    let schema = {{ schema_data|tojson }};
+    console.log("Initial schema:", schema);
+
+    const exampleSchema = {{ example_schema_data|tojson }};
+
+    // Available data sources from the database
+    const availableSources = {{ available_sources_data|tojson }};
+    
+    // Store rule ID in body dataset for later use
+    document.body.dataset.ruleId = '{{ rule.id }}';
+
+    document.addEventListener('DOMContentLoaded', function() {
+        loadSchemaToEditor();
+        updateJsonPreview();
+        initializeSortable();
+    });
+</script>
+<script src="{{ url_for('static', filename='schema_editor.js') }}"></script>
+
+<!-- Include SortableJS library -->
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
+{% endblock %}

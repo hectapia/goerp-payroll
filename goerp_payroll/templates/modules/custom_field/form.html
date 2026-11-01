@@ -1,0 +1,66 @@
+{#-
+SPDX-License-Identifier: Apache-2.0
+SPDX-FileCopyrightText: 2025 - 2026 BMO Soluciones, S.A.
+-#}
+
+{% extends 'base.html' %}
+{% from 'macros.html' import render_field, render_form_errors %}
+
+{% block content %}
+<div class="container">
+    {{ render_form_errors(form) }}
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>{{ title }}</h2>
+        <a href="{{ url_for('custom_field.index') }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left me-1"></i>{{ _('Volver') }}
+        </a>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <form method="POST" action="">
+                {{ form.hidden_tag() }}
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        {{ render_field(form.nombre_campo) }}
+                        <small class="text-muted">{{ _('Use un nombre único sin espacios ni caracteres especiales (ej: numero_hijos)') }}</small>
+                    </div>
+                    <div class="col-md-6">
+                        {{ render_field(form.etiqueta) }}
+                        <small class="text-muted">{{ _('Este nombre será visible en el formulario de empleados (ej: Número de hijos)') }}</small>
+                    </div>
+                </div>
+                
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        {{ render_field(form.tipo_dato) }}
+                    </div>
+                    <div class="col-md-6">
+                        {{ render_field(form.orden) }}
+                        <small class="text-muted">{{ _('Los campos se mostrarán ordenados de menor a mayor') }}</small>
+                    </div>
+                </div>
+                
+                <div class="row mt-3">
+                    <div class="col-md-12">
+                        {{ render_field(form.descripcion) }}
+                    </div>
+                </div>
+                
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        {{ render_field(form.activo) }}
+                    </div>
+                </div>
+                
+                <div class="mt-4">
+                    {{ form.submit(class="btn btn-primary") }}
+                    <a href="{{ url_for('custom_field.index') }}" class="btn btn-secondary">{{ _('Cancelar') }}</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

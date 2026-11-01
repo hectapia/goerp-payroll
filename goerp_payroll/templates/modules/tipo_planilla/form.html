@@ -1,0 +1,74 @@
+{#-
+SPDX-License-Identifier: Apache-2.0
+SPDX-FileCopyrightText: 2025 - 2026 BMO Soluciones, S.A.
+-#}
+
+{% extends 'base.html' %}
+{% from 'macros.html' import render_field, render_form_errors %}
+
+{% block content %}
+<div class="container">
+    {{ render_form_errors(form) }}
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>{{ title }}</h2>
+        <a href="{{ url_for('tipo_planilla.index') }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left me-1"></i>{{ _('Volver') }}
+        </a>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <form method="POST" action="">
+                {{ form.hidden_tag() }}
+                
+                <div class="row">
+                    <div class="col-md-4">
+                        {{ render_field(form.codigo) }}
+                    </div>
+                    <div class="col-md-8">
+                        {{ render_field(form.descripcion) }}
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-4">
+                        {{ render_field(form.periodicidad) }}
+                    </div>
+                    <div class="col-md-4">
+                        {{ render_field(form.dias) }}
+                    </div>
+                    <div class="col-md-4">
+                        {{ render_field(form.periodos_por_anio) }}
+                    </div>
+                </div>
+                
+                <h5 class="mt-4 mb-3">{{ _('Configuración Fiscal') }}</h5>
+                
+                <div class="row">
+                    <div class="col-md-4">
+                        {{ render_field(form.mes_inicio_fiscal) }}
+                    </div>
+                    <div class="col-md-4">
+                        {{ render_field(form.dia_inicio_fiscal) }}
+                    </div>
+                    <div class="col-md-4">
+                        {{ render_field(form.acumula_anual) }}
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        {{ render_field(form.activo) }}
+                    </div>
+                </div>
+                
+                <div class="mt-4">
+                    {{ form.submit(class="btn btn-primary") }}
+                    <a href="{{ url_for('tipo_planilla.index') }}" class="btn btn-secondary">{{ _('Cancelar') }}</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
