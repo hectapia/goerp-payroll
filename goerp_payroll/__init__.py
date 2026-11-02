@@ -315,8 +315,17 @@ def create_app(config) -> Flask:
     # This adds HTTP security headers to all responses to protect against
     # common web vulnerabilities (XSS, clickjacking, MIME sniffing, etc.)
     from goerp_payroll.security import configure_security_headers
-
     configure_security_headers(app)
+
+    @app.errorhandler(500)
+    @app.errorhandler(Exception)
+    def handle_exception(e):
+        from werkzeug.exceptions import HTTPException
+        import traceback
+        if isinstance(e, HTTPException) and e.code != 500:
+            return e
+        log.error("500 Exception: %s\n%s", e, traceback.format_exc())
+        return f"<h3>500 Internal Server Error</h3><pre>{traceback.format_exc()}</pre>", 500
 
     return app
 

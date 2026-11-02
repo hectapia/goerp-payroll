@@ -37,6 +37,8 @@ El módulo de empleados es el corazón del sistema de nómina. Aquí se registra
 
 | Campo | Descripción | Requerido |
 |-------|-------------|-----------|
+| Empresa | Empresa a la que pertenece el empleado | Sí |
+| Código de empleado | Código único del empleado (autogenerado si se omite) | No |
 | Fecha de alta | Fecha de ingreso a la empresa | Sí |
 | Fecha de baja | Fecha de salida (si aplica) | No |
 | Activo | Si el empleado está activo | Sí |
@@ -44,6 +46,13 @@ El módulo de empleados es el corazón del sistema de nómina. Aquí se registra
 | Área | Departamento o área | No |
 | Centro de costos | Centro de costos contable | No |
 | Tipo de contrato | Indefinido, temporal, etc. | No |
+
+### Selección de Empresa según Perfil del Usuario
+
+El acceso a la selección de empresas se rige por políticas estrictas de aislamiento multi-inquilino (*tenant isolation*):
+
+- **Usuario Administrador (`admin`)**: Tiene visibilidad global. Puede seleccionar cualquiera de las empresas activas registradas en el sistema al dar de alta o editar personal.
+- **Usuario de Recursos Humanos (`hhrr`)**: Debe ser un empleado activo de la empresa que gestiona. **Únicamente puede ver y dar de alta personal en la empresa donde él mismo está contratado**. El formulario `/employee/new` autoselecciona su empresa y bloquea la selección de empresas ajenas. Si un usuario de RRHH no estuviese registrado como empleado activo en ninguna empresa, el sistema le impedirá crear nuevos empleados y mostrará una advertencia informativa.
 
 ### Datos de Pago
 
@@ -99,6 +108,29 @@ Use este flujo cuando la empresa comienza a operar en GoERP Payroll después de 
     - Períodos fiscales procesados iniciales = último mes cerrado (para año fiscal enero-diciembre, julio = 7).
 
     Estos saldos iniciales se aplican únicamente en el año fiscal configurado de implementación.
+
+## Carga Masiva de Empleados (Solo Administrador)
+
+Para acelerar la puesta en marcha e importación masiva de nóminas completas, GoERP Payroll permite subir empleados en bloque usando una plantilla en formato **Microsoft Excel (`.xlsx`)** o **CSV (`.csv`)**, compatible con **Google Sheets**.
+
+!!! danger "Restricción de Rol"
+    Por motivos de seguridad y gobierno de datos, esta funcionalidad está reservada **exclusivamente al usuario con rol Administrador (`admin`)**. Los usuarios de Recursos Humanos o Auditoría no tienen acceso a este formulario.
+
+### Pasos para Cargar Empleados en Bloque:
+
+1. Inicie sesión como **Administrador** y vaya a **Personal > Empleados**.
+2. Haga clic en el botón **Carga Masiva** en la parte superior derecha.
+3. Descargue la plantilla oficial en formato Excel (`.xlsx`) o CSV (`.csv`).
+4. Abra la plantilla en **Google Sheets** (mediante *Archivo > Importar*) o en Excel.
+5. Complete los datos de sus empleados en la hoja **`Empleados`** (consulte la hoja **`Catalogos_Referencia`** para los valores válidos de género, tipo de documento, contrato, estado civil y moneda).
+6. Descargue el archivo completado como `.xlsx` o `.csv` desde Google Sheets.
+7. Arrastre o seleccione el archivo en GoERP Payroll y presione **Procesar Carga Masiva**.
+8. El sistema validará fila por fila. Si existen errores, se reportará el número de fila exacto y el motivo del fallo; si las filas son válidas, se guardarán en la base de datos automáticamente.
+
+!!! tip "Normalización de Monedas"
+    El cargador masivo normaliza automáticamente sinónimos y errores tipográficos comunes en los códigos de moneda. Por ejemplo, `MNX`, `PESO` o `PESOS` se traducen automáticamente a `MXN` (Peso Mexicano); `DOLAR` a `USD`; `CORDOBA` a `NIO` y `COLON` a `CRC`.
+
+Para especificaciones detalladas de las 34 columnas de la plantilla, consulte la [Guía de la Plantilla de Carga Masiva de Empleados](../plantilla-excel-empleados.md).
 
 ## Editar Empleado
 

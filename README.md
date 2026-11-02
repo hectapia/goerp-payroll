@@ -73,6 +73,8 @@ as-is, without warranties of fitness for any particular purpose.
 - **Background Processing**: Queue system for large payrolls with Dramatiq+Redis
 - **Vacation Management**: Complete module for vacation accrual, usage, and audit with configurable policies
 - **Role-Based Access Control (RBAC)**: Permission system with Admin, HR, and Audit roles
+- **Multi-Tenant HR Isolation**: Strict company scoping where Human Resources users can only access and register employees for the specific company where they are employed
+- **Employee Bulk Upload (Google Sheets / Excel)**: Administrator onboarding pipeline supporting standard spreadsheets, column auto-detection, and flexible currency normalization
 - **Reporting System**: Custom reports with role-based permissions and execution audit
 - **Internationalization**: Multi-language support with interface and content translation
 - **Periodicidad Compatibility**: Salary calculation accepts both Spanish and English periodicity terms (`mensual`/`monthly`, `quincenal`/`biweekly`)

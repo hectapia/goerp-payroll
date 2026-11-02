@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Employee Bulk Upload (Google Sheets / Excel)**: Administrator-only mass employee onboarding via `/employee/bulk-upload` and template download at `/employee/download-template`, supporting 34 fields, detailed row-by-row error validation, and multi-sheet workbooks.
+- **Currency Alias Normalization**: Automatic tolerance and aliasing for currency representations during bulk upload (e.g., `MNX`/`PESO`/`PESOS` -> `MXN`, `DOLAR` -> `USD`, `CORDOBA` -> `NIO`, `COLON` -> `CRC`).
+- **Bulk Upload Technical Guide**: Complete documentation at `docs/plantilla-excel-empleados.md` with column specifications, required flags, and Google Sheets workflow.
+
+### Security
+
+- **Strict HR Multi-Tenant Scoping**: Human Resources (`hhrr`) user profiles are strictly locked to the company where they are registered as active employees. HR users can only view and create employees for their own company, preventing cross-tenant leakage.
+
+### Fixed
+
+- **Server Logging & Process Lifecycle**: Configured Waitress and root application logging to stdout for immediate diagnostic visibility in production and development tunnels.
+
 ## [1.13.1] - 2026-10-15
 
 ### Fixed

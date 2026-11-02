@@ -1,0 +1,129 @@
+{#-
+SPDX-License-Identifier: Apache-2.0
+SPDX-FileCopyrightText: 2025 - 2026 BMO Soluciones, S.A.
+-#}
+
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-3">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="bi bi-file-earmark-spreadsheet me-2 text-primary"></i>{{ _('Carga Masiva de Empleados') }}</h2>
+            <p class="text-muted mb-0">{{ _('Importación por lotes desde plantilla de Excel o Google Sheets.') }}</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('employee.index') }}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left me-1"></i>{{ _('Volver a Empleados') }}
+            </a>
+        </div>
+    </div>
+
+    <!-- Admin Badge & Info Alert -->
+    <div class="alert alert-info d-flex align-items-center mb-4 shadow-sm" role="alert">
+        <i class="bi bi-shield-lock-fill fs-4 me-3 text-primary"></i>
+        <div>
+            <strong>{{ _('Módulo de Administración:') }}</strong>
+            {{ _('Esta funcionalidad está restringida exclusivamente a usuarios con rol Administrador para garantizar la integridad de los contratos y registros maestros.') }}
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Left: Upload Card -->
+        <div class="col-lg-7">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white py-3">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-cloud-arrow-up me-2 text-primary"></i>{{ _('Subir Archivo de Empleados') }}
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    <form method="POST" action="{{ url_for('employee.bulk_upload') }}" enctype="multipart/form-data">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+
+                        <div class="mb-4">
+                            <label for="file" class="form-label fw-bold">{{ _('Seleccionar archivo (.xlsx o .csv)') }}</label>
+                            <input class="form-control form-control-lg" type="file" id="file" name="file" accept=".xlsx, .xls, .csv" required>
+                            <div class="form-text">
+                                {{ _('Formatos soportados: Microsoft Excel (.xlsx, .xls) o archivo delimitado por comas (.csv).') }}
+                            </div>
+                        </div>
+
+                        <div class="d-grid mb-3">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-upload me-2"></i>{{ _('Procesar Carga Masiva') }}
+                            </button>
+                        </div>
+                    </form>
+
+                    {% if results %}
+                    <hr class="my-4">
+                    <h6 class="fw-bold mb-3">{{ _('Resultados del procesamiento:') }}</h6>
+                    <div class="alert alert-success d-flex align-items-center mb-3">
+                        <i class="bi bi-check-circle-fill fs-5 me-2"></i>
+                        <span><strong>{{ results.success_count }}</strong> {{ _('empleado(s) creados o actualizados con éxito.') }}</span>
+                    </div>
+
+                    {% if results.errors %}
+                    <div class="alert alert-danger">
+                        <h6 class="alert-heading fw-bold">
+                            <i class="bi bi-exclamation-triangle-fill me-1"></i>{{ _('Errores encontrados:') }} ({{ results.errors|length }})
+                        </h6>
+                        <ul class="mb-0 small ps-3">
+                            {% for err in results.errors %}
+                            <li>{{ err }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: Template Download & Instructions -->
+        <div class="col-lg-5">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white py-3">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-download me-2 text-primary"></i>{{ _('Descargar Plantilla Oficial') }}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small">
+                        {{ _('Utilice la plantilla preconfigurada con validación de columnas, ejemplos y catálogos de referencia.') }}
+                    </p>
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('employee.download_template') }}" class="btn btn-outline-primary">
+                            <i class="bi bi-file-earmark-excel me-2"></i>{{ _('Plantilla Excel (.xlsx)') }}
+                        </a>
+                        <a href="{{ url_for('static', filename='templates/plantilla_empleados_googlesheets.csv') }}" class="btn btn-outline-secondary" download>
+                            <i class="bi bi-filetype-csv me-2"></i>{{ _('Plantilla CSV (.csv)') }}
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Google Sheets Steps Card -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-white py-3">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-google me-2 text-success"></i>{{ _('Uso con Google Sheets') }}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <ol class="ps-3 mb-0 small text-muted lh-lg">
+                        <li><strong>{{ _('Descargar:') }}</strong> {{ _('Descargue la plantilla .xlsx arriba.') }}</li>
+                        <li><strong>{{ _('Abrir Google Sheets:') }}</strong> {{ _('Vaya a') }} <a href="https://sheets.new" target="_blank" rel="noopener">sheets.new</a>.</li>
+                        <li><strong>{{ _('Importar:') }}</strong> {{ _('En el menú: Archivo > Importar > Subir y arrastre la plantilla.') }}</li>
+                        <li><strong>{{ _('Llenar datos:') }}</strong> {{ _('Ingrese los empleados respetando los encabezados azules obligatorios (*).') }}</li>
+                        <li><strong>{{ _('Exportar:') }}</strong> {{ _('Archivo > Descargar > Microsoft Excel (.xlsx) o (.csv).') }}</li>
+                        <li><strong>{{ _('Subir:') }}</strong> {{ _('Suba el archivo resultante en esta pantalla.') }}</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

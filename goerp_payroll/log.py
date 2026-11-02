@@ -72,6 +72,11 @@ console_handler.setFormatter(formatter)
 if not any(isinstance(h, logging.StreamHandler) for h in root_logger.handlers):
     root_logger.addHandler(console_handler)
 
+# Configurar logger raíz y waitress
+logging.getLogger().addHandler(console_handler)
+logging.getLogger("waitress").addHandler(console_handler)
+logging.getLogger("waitress").setLevel(numeric_level)
+
 # Configurar logger de Flask y Werkzeug al mismo nivel
 logging.getLogger("flask").setLevel(numeric_level)
 logging.getLogger("werkzeug").setLevel(numeric_level)

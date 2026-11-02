@@ -25,12 +25,85 @@ def is_tenant_admin() -> bool:
     return bool(current_user.is_authenticated and current_user.tipo == TipoUsuario.ADMIN.value)
 
 
+def get_hr_user_empresa_id(user: Any) -> str | None:
+    """Return the company ID where the HR user is registered as an active employee.
+
+    A Human Resources user must be an active employee of the company for which
+    they wish to manage records, and can only see the company where they themselves
+    are registered as an employee.
+    """
+    if not user or not getattr(user, "is_authenticated", False):
+        return None
+
+    from goerp_payroll.model import Empleado
+
+    # 1. Match by email
+    email = getattr(user, "correo_electronico", None)
+    if email:
+        clean_email = email.strip().lower()
+        emp = db.session.execute(
+            db.select(Empleado).filter(
+                db.func.lower(Empleado.correo) == clean_email,
+                Empleado.activo.is_(True),
+            )
+        ).scalars().first()
+        if emp and emp.empresa_id:
+            return emp.empresa_id
+
+    # 2. Match by full name
+    nombre = getattr(user, "nombre", None)
+    apellido = getattr(user, "apellido", None)
+    if nombre and apellido:
+        emps = db.session.execute(
+            db.select(Empleado).filter(
+                db.func.lower(Empleado.primer_nombre) == nombre.strip().lower(),
+                Empleado.activo.is_(True),
+            )
+        ).scalars().all()
+        for emp in emps:
+            apellidos = f"{emp.primer_apellido or ''} {emp.segundo_apellido or ''}".strip().lower()
+            user_apellido = apellido.strip().lower()
+            if apellidos == user_apellido or (emp.primer_apellido and emp.primer_apellido.strip().lower() == user_apellido):
+                if emp.empresa_id:
+                    return emp.empresa_id
+
+    # 3. Match by username matching codigo_empleado
+    usuario_str = getattr(user, "usuario", None)
+    if usuario_str:
+        emp = db.session.execute(
+            db.select(Empleado).filter(
+                Empleado.codigo_empleado == usuario_str.strip(),
+                Empleado.activo.is_(True),
+            )
+        ).scalars().first()
+        if emp and emp.empresa_id:
+            return emp.empresa_id
+
+    # 4. Fallback to assigned companies in usuario_empresa
+    empresas = getattr(user, "empresas", [])
+    if empresas:
+        active_comps = [e for e in empresas if e.activo]
+        if active_comps:
+            return active_comps[0].id
+
+    return None
+
+
 def accessible_empresa_ids() -> set[str] | None:
     """Return permitted company IDs, or ``None`` for an administrator."""
     if not current_user.is_authenticated:
         return set()
     if is_tenant_admin():
         return None
+    if current_user.tipo == TipoUsuario.HHRR.value:
+        # A Human Resources user may only see the company where they themselves
+        # are registered as an active employee.
+        hr_empresa_id = get_hr_user_empresa_id(current_user)
+        if hr_empresa_id:
+            company = db.session.get(Empresa, hr_empresa_id)
+            if company and company.activo:
+                return {hr_empresa_id}
+        return set()
     return {empresa.id for empresa in current_user.empresas if empresa.activo}
 
 

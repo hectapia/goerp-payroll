@@ -4,21 +4,26 @@
 
 from __future__ import annotations
 
-from datetime import date
+import codecs
+import csv
+from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
+from pathlib import Path
 from typing import cast
 
-from flask import Blueprint, flash, redirect, render_template, request, url_for
+from flask import Blueprint, flash, redirect, render_template, request, send_file, url_for
 from flask_login import current_user
 from sqlalchemy import false, true
 
+from goerp_payroll.enums import TipoUsuario
 from goerp_payroll.forms import EmployeeForm, SalaryChangeForm
 from goerp_payroll.i18n import _
-from goerp_payroll.model import CampoPersonalizado, Empleado, HistorialSalario, Moneda, db, utc_now
-from goerp_payroll.rbac import require_read_access, require_write_access
+from goerp_payroll.model import CampoPersonalizado, Empleado, Empresa, HistorialSalario, Moneda, db, utc_now
+from goerp_payroll.rbac import require_read_access, require_role, require_write_access
 from goerp_payroll.tenant import (
-    active_empresa_id,
+    accessible_empresa_ids,
     accessible_empresas,
+    active_empresa_id,
     require_company_access,
     scope_company_query,
     scoped_or_404,
@@ -38,11 +43,7 @@ def get_currency_choices():
 
 def get_empresa_choices():
     """Get list of companies for select fields."""
-
     empresas = accessible_empresas()
-    selected = active_empresa_id()
-    if selected:
-        empresas = [empresa for empresa in empresas if empresa.id == selected]
     return [("", _("Seleccionar..."))] + [(e.id, f"{e.codigo} - {e.razon_social}") for e in empresas]
 
 
@@ -263,9 +264,16 @@ def index():
 def new():
     """Create a new employee. Admin and HR can create employees."""
     form = EmployeeForm()
+    choices = get_empresa_choices()
+    form.empresa_id.choices = choices
     form.moneda_id.choices = get_currency_choices()
-    form.empresa_id.choices = get_empresa_choices()
     custom_fields = get_custom_fields()
+
+    if current_user.tipo == TipoUsuario.HHRR.value and not accessible_empresa_ids():
+        flash(
+            _("Como usuario de Recursos Humanos, debe estar registrado como empleado de una empresa para crear registros."),
+            "warning",
+        )
 
     if form.validate_on_submit():
         require_company_access(form.empresa_id.data)
@@ -282,6 +290,11 @@ def new():
         form.fecha_alta.data = date.today()
     if not form.salario_base.data:
         form.salario_base.data = Decimal("0.00")
+    if request.method == "GET" and not form.empresa_id.data:
+        if active_empresa_id():
+            form.empresa_id.data = active_empresa_id()
+        elif len(choices) == 2:
+            form.empresa_id.data = choices[1][0]
 
     return render_template(
         "modules/employee/form.html",
@@ -506,3 +519,298 @@ def salary_change_apply(change_id: str):
 
     flash(_("Cambio salarial aplicado exitosamente."), "success")
     return redirect(url_for(SALARY_CHANGES_INDEX_ENDPOINT))
+
+
+def _parse_date_value(val) -> date | None:
+    """Safely parse date values from Excel or strings."""
+    if val is None or val == "":
+        return None
+    if isinstance(val, (date, datetime)):
+        return val.date() if isinstance(val, datetime) else val
+    val_str = str(val).strip()
+    if not val_str:
+        return None
+    for fmt in ("%Y-%m-%d", "%d/%m/%Y", "%m/%d/%Y", "%Y/%m/%d"):
+        try:
+            return datetime.strptime(val_str, fmt).date()
+        except ValueError:
+            continue
+    return None
+
+
+def _parse_decimal_value(val) -> Decimal | None:
+    """Safely parse decimal monetary values."""
+    if val is None or val == "":
+        return None
+    try:
+        clean = str(val).replace(",", "").strip()
+        return Decimal(clean)
+    except (InvalidOperation, ValueError):
+        return None
+
+
+def _parse_bool_value(val, default: bool = True) -> bool:
+    """Safely parse boolean values."""
+    if val is None or val == "":
+        return default
+    s = str(val).strip().lower()
+    return s in ("1", "true", "si", "sí", "yes", "active", "activo", "y")
+
+
+@employee_bp.route("/download-template", methods=["GET"])
+@require_role(TipoUsuario.ADMIN)
+def download_template():
+    """Download official employee bulk upload template (.xlsx). Admin only."""
+    template_path = (
+        Path(__file__).resolve().parent.parent / "static" / "templates" / "plantilla_empleados_googlesheets.xlsx"
+    )
+    if not template_path.exists():
+        from scripts.generate_employee_template import generate_template
+
+        generate_template(template_path)
+
+    return send_file(
+        template_path,
+        as_attachment=True,
+        download_name="plantilla_empleados_googlesheets.xlsx",
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+
+
+@employee_bp.route("/bulk-upload", methods=["GET", "POST"])
+@require_role(TipoUsuario.ADMIN)
+def bulk_upload():
+    """Admin-only bulk upload of employees from Excel or CSV (Google Sheets compatible)."""
+    results = None
+
+    if request.method == "POST":
+        if "file" not in request.files:
+            flash(_("No se seleccionó ningún archivo."), "warning")
+            return redirect(url_for("employee.bulk_upload"))
+
+        file = request.files["file"]
+        if not file or not file.filename:
+            flash(_("No se seleccionó ningún archivo."), "warning")
+            return redirect(url_for("employee.bulk_upload"))
+
+        filename = file.filename.lower()
+        if not filename.endswith((".xlsx", ".xls", ".csv")):
+            flash(_("Formato de archivo no soportado. Suba un archivo Excel (.xlsx, .xls) o CSV."), "danger")
+            return redirect(url_for("employee.bulk_upload"))
+
+        rows_data: list[dict] = []
+
+        try:
+            if filename.endswith((".xlsx", ".xls")):
+                import openpyxl
+
+                wb = openpyxl.load_workbook(file, data_only=True)
+                ws = wb["Empleados"] if "Empleados" in wb.sheetnames else wb.active
+                first_row = next(ws.iter_rows(min_row=1, max_row=1, values_only=True), None)
+                if not first_row:
+                    flash(_("El archivo de Excel está vacío."), "danger")
+                    return redirect(url_for("employee.bulk_upload"))
+
+                headers = [str(cell).strip() if cell is not None else "" for cell in first_row]
+                for r in ws.iter_rows(min_row=2, values_only=True):
+                    if not any(r):
+                        continue
+                    row_dict = {headers[i]: r[i] for i in range(min(len(headers), len(r))) if headers[i]}
+                    rows_data.append(row_dict)
+            else:
+                csv_reader = csv.DictReader(codecs.iterdecode(file.stream, "utf-8-sig"))
+                for row in csv_reader:
+                    if not any(row.values()):
+                        continue
+                    rows_data.append({k.strip(): v for k, v in row.items() if k})
+
+        except Exception as exc:
+            flash(_("Error al leer el archivo: %(error)s", error=str(exc)), "danger")
+            return redirect(url_for("employee.bulk_upload"))
+
+        success_count = 0
+        errors = []
+
+        empresas_by_code = {
+            e.codigo.upper(): e
+            for e in db.session.execute(db.select(Empresa).filter_by(activo=True)).scalars().all()
+        }
+        monedas_by_code = {
+            m.codigo.upper(): m
+            for m in db.session.execute(db.select(Moneda).filter_by(activo=True)).scalars().all()
+        }
+
+        for row_idx, row in enumerate(rows_data, start=2):
+            primer_nombre = str(row.get("primer_nombre") or "").strip()
+            primer_apellido = str(row.get("primer_apellido") or "").strip()
+            identificacion = str(row.get("identificacion_personal") or "").strip()
+            codigo_empresa = str(row.get("codigo_empresa") or "").strip().upper()
+            codigo_moneda = str(row.get("codigo_moneda") or "").strip().upper()
+            currency_aliases = {
+                "MNX": "MXN",
+                "PESO": "MXN",
+                "PESOS": "MXN",
+                "DOLAR": "USD",
+                "DOLARES": "USD",
+                "CORDOBA": "NIO",
+                "CORDOBAS": "NIO",
+                "COLON": "CRC",
+                "COLONES": "CRC",
+            }
+            if codigo_moneda in currency_aliases:
+                codigo_moneda = currency_aliases[codigo_moneda]
+            fecha_alta_raw = row.get("fecha_alta")
+            salario_base_raw = row.get("salario_base")
+
+            if not primer_nombre or not primer_apellido or not identificacion:
+                errors.append(_("Fila %(row)d: Falta nombre, apellido o identificación personal.", row=row_idx))
+                continue
+
+            if not codigo_empresa or codigo_empresa not in empresas_by_code:
+                errors.append(
+                    _("Fila %(row)d: Código de empresa '%(code)s' no válido o inactivo.", row=row_idx, code=codigo_empresa)
+                )
+                continue
+
+            empresa = empresas_by_code[codigo_empresa]
+
+            if not codigo_moneda or codigo_moneda not in monedas_by_code:
+                errors.append(
+                    _("Fila %(row)d: Código de moneda '%(code)s' no válido o inactivo.", row=row_idx, code=codigo_moneda)
+                )
+                continue
+
+            moneda = monedas_by_code[codigo_moneda]
+
+            fecha_alta = _parse_date_value(fecha_alta_raw)
+            if not fecha_alta:
+                errors.append(_("Fila %(row)d: Fecha de alta inválida (use YYYY-MM-DD).", row=row_idx))
+                continue
+
+            salario_base = _parse_decimal_value(salario_base_raw)
+            if salario_base is None or salario_base < 0:
+                errors.append(_("Fila %(row)d: Salario base inválido.", row=row_idx))
+                continue
+
+            codigo_empleado = str(row.get("codigo_empleado") or "").strip()
+            segundo_nombre = str(row.get("segundo_nombre") or "").strip() or None
+            segundo_apellido = str(row.get("segundo_apellido") or "").strip() or None
+            tipo_id = str(row.get("tipo_identificacion") or "").strip() or None
+            fecha_nac = _parse_date_value(row.get("fecha_nacimiento"))
+            genero = str(row.get("genero") or "").strip() or None
+            nacionalidad = str(row.get("nacionalidad") or "").strip() or None
+            tipo_sangre = str(row.get("tipo_sangre") or "").strip() or None
+            estado_civil = str(row.get("estado_civil") or "").strip() or None
+            fecha_baja = _parse_date_value(row.get("fecha_baja"))
+            tipo_contrato = str(row.get("tipo_contrato") or "").strip() or None
+            cargo = str(row.get("cargo") or "").strip() or None
+            area = str(row.get("area") or "").strip() or None
+            centro_costos = str(row.get("centro_costos") or "").strip() or None
+            activo = _parse_bool_value(row.get("activo"), default=True)
+            correo = str(row.get("correo") or "").strip() or None
+            telefono = str(row.get("telefono") or "").strip() or None
+            direccion = str(row.get("direccion") or "").strip() or None
+            banco = str(row.get("banco") or "").strip() or None
+            cuenta_bancaria = str(row.get("numero_cuenta_bancaria") or "").strip() or None
+            id_seguridad_social = str(row.get("id_seguridad_social") or "").strip() or None
+            id_fiscal = str(row.get("id_fiscal") or "").strip() or None
+            salario_acum = _parse_decimal_value(row.get("salario_acumulado")) or Decimal("0.00")
+            impuesto_acum = _parse_decimal_value(row.get("impuesto_acumulado")) or Decimal("0.00")
+
+            empleado = None
+            if codigo_empleado:
+                empleado = db.session.execute(
+                    db.select(Empleado).filter(
+                        Empleado.codigo_empleado == codigo_empleado,
+                        Empleado.empresa_id == empresa.id,
+                    )
+                ).scalar_one_or_none()
+
+            if not empleado and identificacion:
+                empleado = db.session.execute(
+                    db.select(Empleado).filter(
+                        Empleado.identificacion_personal == identificacion,
+                        Empleado.empresa_id == empresa.id,
+                    )
+                ).scalar_one_or_none()
+
+            is_new = empleado is None
+            if is_new:
+                empleado = Empleado()
+                empleado.empresa_id = empresa.id
+                if codigo_empleado:
+                    empleado.codigo_empleado = codigo_empleado
+                empleado.creado_por = current_user.usuario
+            else:
+                empleado.modificado_por = current_user.usuario
+
+            empleado.primer_nombre = primer_nombre
+            empleado.segundo_nombre = segundo_nombre
+            empleado.primer_apellido = primer_apellido
+            empleado.segundo_apellido = segundo_apellido
+            empleado.tipo_identificacion = tipo_id
+            empleado.identificacion_personal = identificacion
+            empleado.fecha_nacimiento = fecha_nac
+            empleado.genero = genero
+            empleado.nacionalidad = nacionalidad
+            empleado.tipo_sangre = tipo_sangre
+            empleado.estado_civil = estado_civil
+            empleado.fecha_alta = fecha_alta
+            empleado.fecha_baja = fecha_baja
+            empleado.tipo_contrato = tipo_contrato
+            empleado.cargo = cargo
+            empleado.area = area
+            empleado.centro_costos = centro_costos
+            empleado.salario_base = salario_base
+            empleado.moneda_id = moneda.id
+            empleado.activo = activo
+            empleado.correo = correo
+            empleado.telefono = telefono
+            empleado.direccion = direccion
+            empleado.banco = banco
+            empleado.numero_cuenta_bancaria = cuenta_bancaria
+            empleado.id_seguridad_social = id_seguridad_social
+            empleado.id_fiscal = id_fiscal
+            empleado.salario_acumulado = salario_acum
+            empleado.impuesto_acumulado = impuesto_acum
+
+            sal1 = _parse_decimal_value(row.get("ultimo_salario_1"))
+            sal2 = _parse_decimal_value(row.get("ultimo_salario_2"))
+            sal3 = _parse_decimal_value(row.get("ultimo_salario_3"))
+            if sal1 or sal2 or sal3:
+                ultimos = {}
+                if sal1:
+                    ultimos["salario_1"] = str(sal1)
+                if sal2:
+                    ultimos["salario_2"] = str(sal2)
+                if sal3:
+                    ultimos["salario_3"] = str(sal3)
+                empleado.ultimos_tres_salarios = ultimos
+
+            if is_new:
+                db.session.add(empleado)
+
+            success_count += 1
+
+        try:
+            db.session.commit()
+            if success_count > 0:
+                flash(
+                    _("Carga masiva completada: %(count)d empleado(s) procesados exitosamente.", count=success_count),
+                    "success",
+                )
+        except Exception as exc:
+            db.session.rollback()
+            flash(_("Error al guardar en base de datos: %(error)s", error=str(exc)), "danger")
+            errors.append(str(exc))
+
+        results = {
+            "success_count": success_count,
+            "errors": errors,
+        }
+
+    return render_template(
+        "modules/employee/bulk_upload.html",
+        results=results,
+    )
+

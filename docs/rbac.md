@@ -15,7 +15,8 @@ El sistema soporta tres tipos de usuario, cada uno con diferentes niveles de acc
 **Permisos**:
 - ✅ Crear, editar y eliminar empresas
 - ✅ Crear, editar y eliminar usuarios
-- ✅ Acceso completo a empleados
+- ✅ Acceso completo a empleados en todas las empresas
+- ✅ Carga masiva de empleados (mediante plantilla Google Sheets / Excel)
 - ✅ Acceso completo a préstamos y adelantos
 - ✅ Acceso completo a planillas (nóminas)
 - ✅ Acceso completo a deducciones, percepciones y prestaciones
@@ -23,21 +24,26 @@ El sistema soporta tres tipos de usuario, cada uno con diferentes niveles de acc
 
 **Casos de uso**:
 - Configuración inicial del sistema
-- Gestión de usuarios y permisos
+- Gestión de usuarios y asignación de empresas
+- Importación y carga masiva de personal
 - Creación de empresas
 - Supervisión general del sistema
 
 ### HHRR (Recursos Humanos)
 
-**Descripción**: Usuario con acceso completo a la gestión de personal y nóminas.
+**Descripción**: Usuario con acceso completo a la gestión de personal y nóminas de su propia empresa.
+
+**Aislamiento Multi-inquilino (*Tenant Isolation*)**:
+El usuario de Recursos Humanos **debe ser un empleado activo de la empresa para la cual desea crear o administrar registros**. Por diseño de seguridad, el usuario de RRHH únicamente puede ver la empresa en la que él mismo está registrado como empleado y el sistema autoselecciona esta empresa al crear nuevos colaboradores.
 
 **Permisos**:
-- ✅ Ver empresas (solo lectura)
+- ✅ Ver únicamente la empresa donde está registrado como empleado activo
 - ❌ Crear, editar o eliminar empresas
 - ❌ Gestionar usuarios
-- ✅ Acceso completo a empleados (crear, editar, eliminar)
-- ✅ Acceso completo a préstamos y adelantos
-- ✅ Acceso completo a planillas (nóminas)
+- ✅ Acceso completo a empleados de su empresa (crear, editar, eliminar)
+- ❌ Carga masiva de empleados (función reservada exclusivamente a Administradores)
+- ✅ Acceso completo a préstamos y adelantos de su empresa
+- ✅ Acceso completo a planillas (nóminas) de su empresa
 - ✅ Acceso completo a deducciones, percepciones y prestaciones
 - ✅ Configurar y ejecutar nóminas
 - ✅ Gestionar novedades de nómina
@@ -158,10 +164,11 @@ if can_write():
 | Editar | ✅ | ❌ | ❌ |
 | Eliminar | ✅ | ❌ | ❌ |
 | **Empleados** |
-| Ver lista | ✅ | ✅ | ✅ |
-| Crear | ✅ | ✅ | ❌ |
-| Editar | ✅ | ✅ | ❌ |
-| Eliminar | ✅ | ✅ | ❌ |
+| Ver lista | ✅ (Todas las empresas) | ✅ (Solo su empresa) | ✅ (Empresas asignadas) |
+| Crear | ✅ (Cualquier empresa) | ✅ (Solo su empresa) | ❌ |
+| Editar | ✅ (Cualquier empresa) | ✅ (Solo su empresa) | ❌ |
+| Eliminar | ✅ (Cualquier empresa) | ✅ (Solo su empresa) | ❌ |
+| Carga Masiva (Google Sheets / Excel) | ✅ | ❌ | ❌ |
 | **Préstamos** |
 | Ver lista | ✅ | ✅ | ✅ |
 | Crear | ✅ | ✅ | ❌ |

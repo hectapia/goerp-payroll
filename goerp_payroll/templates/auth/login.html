@@ -16,7 +16,7 @@ SPDX-FileCopyrightText: 2025 - 2026 BMO Soluciones, S.A.
             href="{{ url_for('static', filename='logo/Icono.svg') }}"
         />
         <link rel="manifest" href="{{ url_for('app.manifest') }}" />
-        <meta name="theme-color" content="#5D4037" />
+        <meta name="theme-color" content="#0F172A" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="GoERP Payroll" />
@@ -64,7 +64,7 @@ SPDX-FileCopyrightText: 2025 - 2026 BMO Soluciones, S.A.
                         />
                     </div>
                     <div>
-                        <h1 class="brand-name">Coati <span>Payroll</span></h1>
+                        <h1 class="brand-name">GoERP <span>Payroll</span></h1>
                         <p class="brand-tagline">
                             {{ _('Sistema de gestión de nóminas') }}<br />
                             {{ _('Agiliza y simplifica el pago de sueldos en su
@@ -96,6 +96,9 @@ SPDX-FileCopyrightText: 2025 - 2026 BMO Soluciones, S.A.
                             <i class="bi bi-shuffle"></i>
                             <span>{{ _('Flexible') }}</span>
                         </div>
+                    </div>
+                    <div class="brand-ack mt-4 pt-3 border-top border-white-50 text-white-50 small">
+                        <span>{{ _('Basado en el motor de planillas') }} <a href="https://github.com/bmosoluciones/coati-payroll" target="_blank" rel="noopener noreferrer" class="text-white text-decoration-underline fw-semibold">coati-payroll</a> (BMO Soluciones, S.A.)</span>
                     </div>
                 </div>
             </div>
@@ -191,6 +194,9 @@ SPDX-FileCopyrightText: 2025 - 2026 BMO Soluciones, S.A.
                     </form>
                     <div class="text-center mt-3">
                         <a href="{{ url_for('auth.forgot_password') }}">{{ _('¿Olvidaste tu contraseña?') }}</a>
+                    </div>
+                    <div class="text-center mt-4 pt-3 border-top text-muted small">
+                        <span>{{ _('Basado en') }} <a href="https://github.com/bmosoluciones/coati-payroll" target="_blank" rel="noopener noreferrer" class="text-muted fw-semibold">coati-payroll</a> (BMO Soluciones, S.A.)</span>
                     </div>
                 </div>
             </div>

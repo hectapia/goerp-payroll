@@ -89,14 +89,14 @@ def manifest():
     data = {
         "id": "/",
         "name": "GoERP Payroll",
-        "short_name": "Coati",
+        "short_name": "GoERP",
         "description": "Sistema de gestión de nóminas",
         "start_url": url_for("app.index"),
         "scope": "/",
         "display": "standalone",
         "orientation": "any",
-        "background_color": "#FAF8F6",
-        "theme_color": "#5D4037",
+        "background_color": "#F8FAFC",
+        "theme_color": "#0F172A",
         "lang": "es",
         "categories": ["business", "productivity"],
         "icons": [

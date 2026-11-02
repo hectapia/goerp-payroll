@@ -11,11 +11,14 @@ GoERP Payroll permite administrar usuarios con diferentes niveles de acceso al s
 
 El sistema soporta los siguientes tipos de usuario:
 
-| Tipo | Descripción | Permisos |
-|------|-------------|----------|
-| **admin** | Administrador | Acceso completo a todas las funcionalidades |
-| **hhrr** | Recursos Humanos | Gestión de personal y nóminas |
-| **audit** | Auditoría | Acceso de solo lectura para auditoría |
+| Tipo | Descripción | Permisos y Alcance |
+|------|-------------|---------------------|
+| **admin** | Administrador | Acceso total al sistema, gestión de empresas y usuarios, y carga masiva de empleados. |
+| **hhrr** | Recursos Humanos | Gestión de personal y nóminas **exclusivamente de su propia empresa**. El usuario debe estar registrado como empleado activo en la empresa para poder operar. |
+| **audit** | Auditoría | Acceso de solo lectura para auditoría en las empresas asignadas. |
+
+!!! important "Requisito para Usuarios de Recursos Humanos (`hhrr`)"
+    Todo usuario con perfil de Recursos Humanos **debe existir como empleado activo de la empresa que va a gestionar** (registrado con el mismo correo electrónico o nombre completo). La aplicación limita automáticamente su visibilidad únicamente a su empresa empleadora, impidiendo que gestione o visualice colaboradores de otras empresas.
 
 ## Crear Nuevo Usuario
 
@@ -28,9 +31,10 @@ El sistema soporta los siguientes tipos de usuario:
 | Contraseña | Contraseña (mínimo 6 caracteres) | Sí |
 | Nombre | Nombre del usuario | No |
 | Apellido | Apellido del usuario | No |
-| Correo electrónico | Email del usuario | No |
-| Tipo de usuario | Rol del usuario en el sistema | Sí |
+| Correo electrónico | Email del usuario (usado para vincular con su ficha de empleado) | No |
+| Tipo de usuario | Rol del usuario en el sistema (`admin`, `hhrr`, `audit`) | Sí |
 | Activo | Si el usuario puede iniciar sesión | Sí |
+| Empresas asignadas | Empresas a las que el usuario tiene acceso (para usuarios de auditoría o complementarios) | No |
 
 3. Haga clic en **Guardar**
 

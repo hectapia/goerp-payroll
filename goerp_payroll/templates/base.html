@@ -9,10 +9,10 @@ SPDX-FileCopyrightText: 2025 - 2026 BMO Soluciones, S.A.
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>{{ _('Coaty - Sistema de Planillas') }}</title>
+    <title>{{ _('GoERP Payroll - Sistema de Planillas') }}</title>
     <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='logo/Icono.svg') }}" />
     <link rel="manifest" href="{{ url_for('app.manifest') }}" />
-    <meta name="theme-color" content="#5D4037" />
+    <meta name="theme-color" content="#0F172A" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="GoERP Payroll" />
@@ -44,11 +44,10 @@ SPDX-FileCopyrightText: 2025 - 2026 BMO Soluciones, S.A.
             <span class="navbar-toggler-icon"></span>
         </button>
 
-        <a class="navbar-brand fw-bold text-uppercase" href="{{ url_for('app.index') }}">
-            <img src="{{ url_for('static', filename='logo/Icono.png') }}" alt="GoERP Payroll Logo" height="30"
-                width="30" />
-            {{ _('Coati') }}
-            <span class="fw-normal">Payroll</span></span>
+        <a class="navbar-brand fw-bold text-uppercase d-flex align-items-center gap-2" href="{{ url_for('app.index') }}">
+            <img src="{{ url_for('static', filename='logo/Icono.png') }}" alt="GoERP Payroll Logo" height="32"
+                width="32" class="d-inline-block align-text-top" />
+            <span>GoERP <span class="fw-normal text-white-50">Payroll</span></span>
         </a>
 
         <!-- Navbar items - visible en pantallas grandes -->
@@ -215,12 +214,20 @@ SPDX-FileCopyrightText: 2025 - 2026 BMO Soluciones, S.A.
         </aside>
 
         <!-- ======================= CONTENIDO DINÁMICO ======================= -->
-        <main class="flex-grow-1 p-4">
+        <main class="flex-grow-1 d-flex flex-column p-4">
             {{ render_messages() }}
-            {% block content %}
-            <h2>{{ _('Bienvenido a Coaty') }}</h2>
-            <p>{{ _('Sistema de Planillas (Payroll)') }}</p>
-            {% endblock %}
+            <div class="flex-grow-1">
+                {% block content %}
+                <h2>{{ _('Bienvenido a GoERP Payroll') }}</h2>
+                <p>{{ _('Sistema de Planillas (Payroll)') }}</p>
+                {% endblock %}
+            </div>
+            <!-- Footer con reconocimiento a coati-payroll -->
+            <footer class="app-footer mt-auto pt-4 pb-2 text-center text-muted border-top small">
+                <span>GoERP Payroll &copy; 2026</span>
+                <span class="mx-2">&bull;</span>
+                <span>{{ _('Basado en el motor de planillas') }} <a href="https://github.com/bmosoluciones/coati-payroll" target="_blank" rel="noopener noreferrer" class="text-decoration-none fw-semibold">coati-payroll</a> (BMO Soluciones, S.A.)</span>
+            </footer>
         </main>
     </div>
 
