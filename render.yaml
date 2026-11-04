@@ -1,0 +1,136 @@
+# yaml-language-server: $schema=https://render.com/schema/render.yaml.json
+# =============================================================================
+# GoERP Payroll - Render Infrastructure Blueprint
+# =============================================================================
+#
+# This blueprint provisions GoERP Payroll on Render using an external Neon
+# PostgreSQL database in AWS us-east-2 (Ohio):
+# 1. External Database: Neon PostgreSQL (neondb_owner, SSL required)
+# 2. Key Value Store / Redis: Task queue backend for Dramatiq and session/cache
+# 3. Web Service: Flask + Waitress WSGI application
+# 4. Background Worker: Dedicated Dramatiq worker processing payroll jobs
+# 5. Scheduled Cron Job: Daily currency exchange rates synchronization
+#
+# To deploy:
+# - Connect your repository to Render (https://dashboard.render.com/blueprints).
+# - Click "New Blueprint Instance" and select this repository.
+#
+# =============================================================================
+
+version: "1"
+
+# -----------------------------------------------------------------------------
+# Shared Environment Variables Group
+# -----------------------------------------------------------------------------
+envVarGroups:
+  - name: goerp-payroll-shared
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: QUEUE_ENABLED
+        value: "1"
+      - key: BACKGROUND_PAYROLL_THRESHOLD
+        value: "100"
+      - key: ADMIN_USER
+        value: admin
+      - key: ADMIN_PASSWORD
+        value: NeonAdminPassword2026!
+      # Auto-generate cryptographically secure secret for Flask sessions
+      - key: SECRET_KEY
+        generateValue: true
+      # Neon PostgreSQL connection string (Ohio - us-east-2)
+      - key: DATABASE_URL
+        value: postgresql://neondb_owner:npg_CVIwn4k6ulmv@ep-damp-bread-b4fq1gik-pooler.c-6.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+
+# -----------------------------------------------------------------------------
+# Application Services
+# -----------------------------------------------------------------------------
+services:
+  # ---------------------------------------------------------------------------
+  # 1. Redis / Key Value Store (Queue broker for Dramatiq & Cache)
+  # ---------------------------------------------------------------------------
+  - type: keyvalue
+    name: goerp-payroll-redis
+    region: ohio
+    plan: starter
+    # Use noeviction so queue jobs are never dropped if memory fills up
+    maxmemoryPolicy: noeviction
+    ipAllowList: []
+
+  # ---------------------------------------------------------------------------
+  # 2. Web Application Service (Flask WSGI)
+  # ---------------------------------------------------------------------------
+  - type: web
+    name: goerp-payroll-web
+    region: ohio
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    plan: starter
+    healthCheckPath: /health
+    envVars:
+      - fromGroup: goerp-payroll-shared
+      - key: PROCESS_ROLE
+        value: web
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: goerp-payroll-redis
+          property: connectionString
+      - key: CACHE_REDIS_URL
+        fromService:
+          type: keyvalue
+          name: goerp-payroll-redis
+          property: connectionString
+      - key: SESSION_REDIS_URL
+        fromService:
+          type: keyvalue
+          name: goerp-payroll-redis
+          property: connectionString
+
+  # ---------------------------------------------------------------------------
+  # 3. Dedicated Background Worker (Dramatiq Queue Processor)
+  # ---------------------------------------------------------------------------
+  - type: worker
+    name: goerp-payroll-worker
+    region: ohio
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    plan: starter
+    envVars:
+      - fromGroup: goerp-payroll-shared
+      - key: PROCESS_ROLE
+        value: worker
+      - key: DRAMATIQ_WORKER_THREADS
+        value: "8"
+      - key: DRAMATIQ_WORKER_PROCESSES
+        value: "2"
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: goerp-payroll-redis
+          property: connectionString
+      - key: CACHE_REDIS_URL
+        fromService:
+          type: keyvalue
+          name: goerp-payroll-redis
+          property: connectionString
+
+  # ---------------------------------------------------------------------------
+  # 4. Scheduled Maintenance Cron: Daily Exchange Rate Sync
+  # ---------------------------------------------------------------------------
+  - type: cron
+    name: goerp-payroll-sync-exchange-rates
+    region: ohio
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    plan: starter
+    # Runs daily at 06:15 UTC
+    schedule: "15 6 * * *"
+    dockerCommand: "/opt/venv/bin/payrollctl maintenance sync-exchange-rates"
+    envVars:
+      - fromGroup: goerp-payroll-shared
+      - key: PROCESS_ROLE
+        value: cron

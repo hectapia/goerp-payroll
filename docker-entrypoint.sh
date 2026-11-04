@@ -76,7 +76,10 @@ elif [ "$PROCESS_ROLE" = "web" ]; then
   # Web-only mode: no worker (worker runs in separate container)
   echo "[entrypoint] Starting app in web-only mode (no worker): $*"
   exec "$PYTHON" app.py
+elif [ "$PROCESS_ROLE" = "exec" ] || [ "$PROCESS_ROLE" = "cron" ] || [ "$PROCESS_ROLE" = "custom" ]; then
+  echo "[entrypoint] Executing command: $*"
+  exec "$@"
 else
-  echo "[entrypoint] ERROR: Invalid PROCESS_ROLE='$PROCESS_ROLE'. Valid options: web, worker, all" >&2
+  echo "[entrypoint] ERROR: Invalid PROCESS_ROLE='$PROCESS_ROLE'. Valid options: web, worker, all, cron, exec" >&2
   exit 1
 fi
