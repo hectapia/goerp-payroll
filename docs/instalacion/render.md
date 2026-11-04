@@ -1,78 +1,82 @@
-# Despliegue en Render con Base de Datos Neon PostgreSQL
+# Despliegue en Render como Servicio Web (Sin Blueprints)
 
-Esta guía explica cómo desplegar GoERP Payroll en producción utilizando la plataforma PaaS [Render](https://render.com) conectada a una base de datos externa [Neon PostgreSQL](https://neon.tech) mediante el archivo de Blueprint [`render.yaml`](../../render.yaml).
+Esta guía explica cómo desplegar GoERP Payroll en [Render](https://render.com) como un **único Servicio Web (Web Service)** conectado directamente a su base de datos **Neon PostgreSQL**, sin necesidad de contratar Blueprints de pago ni servicios adicionales.
 
 ---
 
-## Arquitectura en Render + Neon
-
-El archivo [`render.yaml`](../../render.yaml) aprovisiona la capa de aplicación y cola en Render (Región **Ohio / us-east-2**, coincidiendo con la ubicación de Neon para mínima latencia):
+## Arquitectura Simplificada
 
 ```mermaid
-graph TD
-    User([Usuario / Navegador]) -->|HTTPS / Puerto 443| Web[goerp-payroll-web\nServicio Web Render\nRegión: Ohio]
-    Cron[goerp-payroll-sync-exchange-rates\nCron Job Diario] -->|Actualiza tasas / TLS| Neon[(Neon PostgreSQL\nOhio us-east-2)]
-    Web -->|Lectura / Escritura TLS| Neon
-    Web -->|Encola tareas| Redis[(goerp-payroll-redis\nKey Value / Redis Render\nRegión: Ohio)]
-    Worker[goerp-payroll-worker\nDramatiq Background Worker\nRegión: Ohio] -->|Consume tareas| Redis
-    Worker -->|Calcula nómina / TLS| Neon
+graph LR
+    User([Navegador / Usuario]) -->|HTTPS| Web[Render Web Service\ngoerp-payroll\nRegión: Ohio]
+    Web -->|TLS / Conexión Directa| Neon[(Neon PostgreSQL\nOhio us-east-2)]
 ```
 
-1. **Base de Datos Externa ([Neon PostgreSQL](https://neon.tech))**: PostgreSQL serverless en `us-east-2` (Ohio). El motor de GoERP Payroll detecta automáticamente el host `neon.tech` y habilita conexión segura SSL/TLS.
-2. **Cola y Caché (`goerp-payroll-redis`)**: Instancia Key Value / Redis en Render (Ohio) para gestión de tareas asíncronas con Dramatiq y sesiones de usuario con política `noeviction`.
-3. **Servicio Web (`goerp-payroll-web`)**: Contenedor Docker basado en el [`Dockerfile`](../../Dockerfile), con Waitress WSGI y verificación de salud en `/health`.
-4. **Worker en Segundo Plano (`goerp-payroll-worker`)**: Procesa asíncronamente los cálculos masivos de nómina y la generación de recibos PDF.
-5. **Cron Job de Mantenimiento (`goerp-payroll-sync-exchange-rates`)**: Ejecución programada diaria (06:15 UTC) para sincronizar tipos de cambio.
+* **Servidor Web:** Ejecuta la aplicación Flask + Waitress dentro de un contenedor Docker.
+* **Base de Datos:** Se conecta a su base de datos existente en Neon (`us-east-2`).
+* **Cálculos de Nómina:** Se ejecutan de manera síncrona (`QUEUE_ENABLED=0`), por lo que **no requiere Redis ni contenedores worker adicionales**.
+* **Costo:** Puede ejecutarse en el plan **Free** o **Starter** de Render.
 
 ---
 
-## Parámetros de Conexión Configurados
+## Paso a Paso: Crear el Servicio Web Manualmente
 
-* **Región de Despliegue:** `ohio` (AWS `us-east-2`, misma región del pooler de Neon).
-* **Base de Datos:**
-  * Host: `ep-damp-bread-b4fq1gik-pooler.c-6.us-east-2.aws.neon.tech`
-  * Base de datos: `neondb`
-  * Usuario: `neondb_owner`
-* **Credenciales de Administrador de la Aplicación Web:**
-  * **Usuario**: `admin`
-  * **Contraseña**: `NeonAdminPassword2026!`
+### 1. Crear el Nuevo Servicio Web
+
+1. Inicie sesión en su cuenta de [Render Dashboard](https://dashboard.render.com).
+2. En la esquina superior derecha, haga clic en el botón azul **New +** y seleccione **Web Service**.
+3. En la lista de repositorios de GitHub/GitLab, busque y seleccione el repositorio de **GoERP Payroll** (haga clic en **Connect**).
 
 ---
 
-## Paso a Paso para el Despliegue
+### 2. Configuración Principal del Servicio
 
-### 1. Conectar el Blueprint en Render
+Complete los siguientes campos en el formulario de Render:
 
-1. Inicie sesión en el [Dashboard de Render](https://dashboard.render.com).
-2. En la barra superior, haga clic en **New +** y seleccione **Blueprint**.
-3. Seleccione el repositorio de Git que contiene GoERP Payroll.
-4. Render leerá automáticamente el archivo [`render.yaml`](../../render.yaml) y le mostrará los servicios a crear:
-   - Redis Key-Value (`goerp-payroll-redis` en Ohio)
-   - Servicio Web (`goerp-payroll-web` en Ohio)
-   - Background Worker (`goerp-payroll-worker` en Ohio)
-   - Cron Job (`goerp-payroll-sync-exchange-rates` en Ohio)
-   - Grupo de variables compartidas (`goerp-payroll-shared`)
-5. Haga clic en **Apply**.
-
-Render compilará la imagen Docker e inicializará los servicios conectados a su base de datos Neon.
+| Campo | Valor Recomendado | Explicación |
+| :--- | :--- | :--- |
+| **Name** | `goerp-payroll` | Nombre identificador de su servicio y URL (`goerp-payroll.onrender.com`). |
+| **Region** | **Ohio (US East)** | **Importante:** Seleccione Ohio para que esté en el mismo centro de datos AWS (`us-east-2`) que Neon, minimizando la latencia. |
+| **Branch** | `main` (o su rama activa) | Rama de Git a desplegar. |
+| **Language / Runtime** | **Docker** | Render detectará automáticamente el archivo [`Dockerfile`](../../Dockerfile) en la raíz. |
+| **Instance Type** | **Free** (o Starter) | Seleccione **Free** para pruebas sin costo. |
 
 ---
 
-## Inicialización y Migraciones de Base de Datos
+### 3. Configuración Avanzada (Health Check)
 
-Al iniciar el contenedor por primera vez contra su base de datos Neon, el entrypoint ejecuta automáticamente:
-```bash
-payrollctl database init
-payrollctl database migrate
-```
-Esto creará o actualizará todas las tablas requeridas en su base de datos Neon de manera transparente.
+Despliegue la sección **Advanced** al final de la página y configure:
+
+* **Health Check Path:** `/health`
 
 ---
 
-## Acceso Inicial a la Aplicación
+### 4. Variables de Entorno (Environment Variables)
 
-Una vez que el servicio `goerp-payroll-web` esté en estado **Live**:
-1. Abra la URL `.onrender.com` asignada por Render.
-2. Inicie sesión con:
-   - **Usuario**: `admin`
-   - **Contraseña**: `NeonAdminPassword2026!`
+En la sección **Environment Variables**, agregue las siguientes variables (haga clic en **Add Environment Variable** para cada una o use **Add from .env**):
+
+| Clave (Key) | Valor (Value) |
+| :--- | :--- |
+| `FLASK_ENV` | `production` |
+| `PROCESS_ROLE` | `web` |
+| `QUEUE_ENABLED` | `0` |
+| `ADMIN_USER` | `admin` |
+| `ADMIN_PASSWORD` | `NeonAdminPassword2026!` |
+| `DATABASE_URL` | `postgresql://neondb_owner:npg_CVIwn4k6ulmv@ep-damp-bread-b4fq1gik-pooler.c-6.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require` |
+| `SECRET_KEY` | `goerp-secret-key-prod-2026-render-app!` *(o cualquier cadena aleatoria)* |
+
+---
+
+### 5. Desplegar
+
+1. Haga clic en el botón **Create Web Service** al final de la página.
+2. Render comenzará a compilar la imagen Docker. Durante el primer inicio, el entrypoint ejecutará automáticamente:
+   ```bash
+   payrollctl database init
+   payrollctl database migrate
+   ```
+   inicializando las tablas en su base de datos Neon.
+3. Una vez que el estado cambie a **Live**, haga clic en la URL asignada (`https://goerp-payroll-xxxx.onrender.com`).
+4. Inicie sesión con:
+   * **Usuario:** `admin`
+   * **Contraseña:** `NeonAdminPassword2026!`
