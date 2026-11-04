@@ -79,6 +79,7 @@ nav:
   - Instalación:
     - Requisitos del Sistema: instalacion/requisitos.md
     - Instalación: instalacion/instalacion.md
+    - Despliegue en Render: instalacion/render.md
   - Tutorial Completo:
     - Guía de Inicio Rápido: guia/inicio-rapido.md
     - Primeros Pasos: guia/primeros-pasos.md
