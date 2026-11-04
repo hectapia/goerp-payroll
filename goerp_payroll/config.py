@@ -198,7 +198,9 @@ if isinstance(database_url_base, str):
                         import ssl
 
                         ssl_ctx = ssl.create_default_context()
-                        engine_opts = dict(CONFIGURACION.get("SQLALCHEMY_ENGINE_OPTIONS") or {})  # type: ignore[arg-type]
+                        engine_opts = dict(
+                            CONFIGURACION.get("SQLALCHEMY_ENGINE_OPTIONS") or {}
+                        )  # type: ignore[arg-type]
                         connect_args = dict(engine_opts.get("connect_args") or {})
                         connect_args["ssl_context"] = ssl_ctx
                         engine_opts["connect_args"] = connect_args
