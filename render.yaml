@@ -30,8 +30,8 @@ services:
       - key: ADMIN_USER
         value: admin
       - key: ADMIN_PASSWORD
-        value: NeonAdminPassword2026!
+        sync: false
       - key: DATABASE_URL
-        value: postgresql://neondb_owner:npg_CVIwn4k6ulmv@ep-damp-bread-b4fq1gik-pooler.c-6.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+        sync: false
       - key: SECRET_KEY
         generateValue: true
