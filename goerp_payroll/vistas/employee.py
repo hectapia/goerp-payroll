@@ -271,7 +271,10 @@ def new():
 
     if current_user.tipo == TipoUsuario.HHRR.value and not accessible_empresa_ids():
         flash(
-            _("Como usuario de Recursos Humanos, debe estar registrado como empleado de una empresa para crear registros."),
+            _(
+                "Como usuario de Recursos Humanos, debe estar registrado"
+                " como empleado de una empresa para crear registros."
+            ),
             "warning",
         )
 
@@ -668,7 +671,11 @@ def bulk_upload():
 
             if not codigo_empresa or codigo_empresa not in empresas_by_code:
                 errors.append(
-                    _("Fila %(row)d: Código de empresa '%(code)s' no válido o inactivo.", row=row_idx, code=codigo_empresa)
+                    _(
+                        "Fila %(row)d: Código de empresa '%(code)s' no válido o inactivo.",
+                        row=row_idx,
+                        code=codigo_empresa,
+                    )
                 )
                 continue
 
@@ -676,7 +683,11 @@ def bulk_upload():
 
             if not codigo_moneda or codigo_moneda not in monedas_by_code:
                 errors.append(
-                    _("Fila %(row)d: Código de moneda '%(code)s' no válido o inactivo.", row=row_idx, code=codigo_moneda)
+                    _(
+                        "Fila %(row)d: Código de moneda '%(code)s' no válido o inactivo.",
+                        row=row_idx,
+                        code=codigo_moneda,
+                    )
                 )
                 continue
 
@@ -813,4 +824,3 @@ def bulk_upload():
         "modules/employee/bulk_upload.html",
         results=results,
     )
-

@@ -196,13 +196,18 @@ if isinstance(database_url_base, str):
                     )
                     if needs_ssl:
                         import ssl
+                        from typing import Any
 
                         ssl_ctx = ssl.create_default_context()
-                        engine_opts = dict(CONFIGURACION.get("SQLALCHEMY_ENGINE_OPTIONS") or {})  # type: ignore[arg-type]
-                        connect_args = dict(engine_opts.get("connect_args") or {})
+                        engine_opts: dict[str, Any] = dict(
+                            CONFIGURACION.get("SQLALCHEMY_ENGINE_OPTIONS") or {}  # type: ignore[arg-type]
+                        )
+                        connect_args: dict[str, Any] = dict(
+                            engine_opts.get("connect_args") or {}
+                        )
                         connect_args["ssl_context"] = ssl_ctx
                         engine_opts["connect_args"] = connect_args
-                        CONFIGURACION["SQLALCHEMY_ENGINE_OPTIONS"] = engine_opts
+                        CONFIGURACION["SQLALCHEMY_ENGINE_OPTIONS"] = engine_opts  # type: ignore[assignment]
 
                     new_query = urlencode(query, doseq=True) if query else ""
                     cleaned = urlunparse(parsed._replace(query=new_query))

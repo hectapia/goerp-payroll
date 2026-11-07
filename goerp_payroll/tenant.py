@@ -63,7 +63,8 @@ def get_hr_user_empresa_id(user: Any) -> str | None:
         for emp in emps:
             apellidos = f"{emp.primer_apellido or ''} {emp.segundo_apellido or ''}".strip().lower()
             user_apellido = apellido.strip().lower()
-            if apellidos == user_apellido or (emp.primer_apellido and emp.primer_apellido.strip().lower() == user_apellido):
+            primer_match = bool(emp.primer_apellido and emp.primer_apellido.strip().lower() == user_apellido)
+            if apellidos == user_apellido or primer_match:
                 if emp.empresa_id:
                     return emp.empresa_id
 
