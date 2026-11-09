@@ -28,9 +28,8 @@ def is_tenant_admin() -> bool:
 def get_hr_user_empresa_id(user: Any) -> str | None:
     """Return the company ID where the HR user is registered as an active employee.
 
-    A Human Resources user must be an active employee of the company for which
-    they wish to manage records, and can only see the company where they themselves
-    are registered as an employee.
+    A Human Resources user is restricted to their own active employee company
+    when that relationship is available.
     """
     if not user or not getattr(user, "is_authenticated", False):
         return None
@@ -80,11 +79,12 @@ def get_hr_user_empresa_id(user: Any) -> str | None:
         if emp and emp.empresa_id:
             return emp.empresa_id
 
-    # 4. Fallback to assigned companies in usuario_empresa
+    # 4. Fall back only when there is one assigned company; multiple assignments
+    # must remain unselected until the user explicitly chooses a company.
     empresas = getattr(user, "empresas", [])
     if empresas:
         active_comps = [e for e in empresas if e.activo]
-        if active_comps:
+        if len(active_comps) == 1:
             return active_comps[0].id
 
     return None
@@ -97,14 +97,12 @@ def accessible_empresa_ids() -> set[str] | None:
     if is_tenant_admin():
         return None
     if current_user.tipo == TipoUsuario.HHRR.value:
-        # A Human Resources user may only see the company where they themselves
-        # are registered as an active employee.
         hr_empresa_id = get_hr_user_empresa_id(current_user)
         if hr_empresa_id:
             company = db.session.get(Empresa, hr_empresa_id)
             if company and company.activo:
                 return {hr_empresa_id}
-        return set()
+        return {empresa.id for empresa in current_user.empresas if empresa.activo}
     return {empresa.id for empresa in current_user.empresas if empresa.activo}
 
 
