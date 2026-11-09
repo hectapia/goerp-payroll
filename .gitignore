@@ -220,6 +220,7 @@ messages.pot
 
 # JSON
 *.json
+!goerp_payroll/jurisdictions/*.json
 .pylintrc
 goerp_payroll/translations/**.mo
 
